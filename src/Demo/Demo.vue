@@ -40,7 +40,7 @@ export default {
       zoom_min: 0.10,
       zoom_max: 5.0,
       page_format_mm: [210, 297],
-      page_margins: "10mm 15mm",
+      page_margins: [10, 15],
       display: "grid", // ["grid", "vertical", "horizontal"]
       mounted: false, // will be true after this component is mounted
       undo_count: -1, // contains the number of times user can undo (= current position in content_history)

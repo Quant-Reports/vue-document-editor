@@ -57,8 +57,8 @@ export default {
 
     // Page margins in CSS
     page_margins: {
-      type: [String, Function],
-      default: "10mm 15mm"
+      type: Array,
+      default:  () => [10, 15]
     },
 
     // Display zoom. Only acts on the screen display
@@ -79,7 +79,8 @@ export default {
       editor_width: 0, // real measured with of an empty editor <div> in px
       prevent_next_content_update_from_parent: false, // workaround to avoid infinite update loop
       current_text_style: false, // contains the style at caret position
-      printing_mode: false, // flag set when page is rendering in printing mode
+      printing_mode: false, // flag set when page is rendering in printing mode,
+      px_in_mm: 0.18421052631578947368421052631579 // 137.8DPI 
     }
   },
 
@@ -360,13 +361,13 @@ export default {
 
     // Process the specific style (position and size) of each page <div> and content <div>
     page_style (page_idx, allow_overflow) {
-      const px_in_mm = 0.2645833333333;
-      const page_width = this.page_format_mm[0] / px_in_mm;
-      const page_spacing_mm = 10;
-      const page_with_plus_spacing = (page_spacing_mm + this.page_format_mm[0]) * this.zoom / px_in_mm;
+      const page_width = this.page_format_mm[0] / this.px_in_mm;
+      const page_height = this.page_format_mm[1] / this.px_in_mm;
+      const page_spacing_px = 45;
+      const page_with_plus_spacing = (page_spacing_px + page_width) * this.zoom;
       const view_padding = 20;
       const inner_width = this.editor_width - 2 * view_padding;
-      let nb_pages_x = 1, page_column, x_pos, x_ofx, left_px, top_mm, bkg_width_mm, bkg_height_mm;
+      let nb_pages_x = 1, page_column, x_pos, x_ofx, left_px, top_px, bkg_width_px, bkg_height_px;
       if(this.display == "horizontal") {
         if(inner_width > (this.pages.length * page_with_plus_spacing)){
           nb_pages_x = Math.floor(inner_width / page_with_plus_spacing);
@@ -375,9 +376,9 @@ export default {
           nb_pages_x = this.pages.length;
           left_px = page_with_plus_spacing * page_idx + page_width / 2 * (this.zoom - 1);
         }
-        top_mm = 0;
-        bkg_width_mm = this.zoom * (this.page_format_mm[0] * nb_pages_x + (nb_pages_x - 1) * page_spacing_mm);
-        bkg_height_mm = this.page_format_mm[1] * this.zoom;
+        top_px = 0;
+        bkg_width_px = this.zoom * (page_width * nb_pages_x + (nb_pages_x - 1) * page_spacing_px);
+        bkg_height_px = page_height * this.zoom;
       } else { // "grid", vertical
         nb_pages_x = Math.floor(inner_width / page_with_plus_spacing);
         if(nb_pages_x < 1 || this.display == "vertical") nb_pages_x = 1;
@@ -385,26 +386,26 @@ export default {
         x_pos = inner_width / (nb_pages_x * 2) * (1 + page_column * 2) - page_width / 2;
         x_ofx = Math.max(0, (page_width * this.zoom - inner_width) / 2);
         left_px = x_pos + x_ofx;
-        top_mm = ((this.page_format_mm[1] + page_spacing_mm) * this.zoom) * Math.floor(page_idx / nb_pages_x);
+        top_px = ((page_height + page_spacing_px) * this.zoom) * Math.floor(page_idx / nb_pages_x);
         const nb_pages_y = Math.ceil(this.pages.length / nb_pages_x);
-        bkg_width_mm = this.zoom * (this.page_format_mm[0] * nb_pages_x + (nb_pages_x - 1) * page_spacing_mm);
-        bkg_height_mm = this.zoom * (this.page_format_mm[1] * nb_pages_y + (nb_pages_y - 1) * page_spacing_mm);
+        bkg_width_px = this.zoom * (page_width * nb_pages_x + (nb_pages_x - 1) * page_spacing_px);
+        bkg_height_px = this.zoom * (page_height * nb_pages_y + (nb_pages_y - 1) * page_spacing_px);
       }
       if(page_idx >= 0) {
         const style = {
           position: "absolute",
           left: "calc("+ left_px +"px + "+ view_padding +"px)",
-          top: "calc("+ top_mm +"mm + "+ view_padding +"px)",
-          width: this.page_format_mm[0]+"mm",
+          top: "calc("+ top_px +"px + "+ view_padding +"px)",
+          width: page_width+"px",
           // "height" is set below
-          padding: (typeof this.page_margins == "function") ? this.page_margins(page_idx + 1, this.pages.length) : this.page_margins,
+          padding: (this.page_margins[0] / this.px_in_mm) + "px "+ (this.page_margins[1] / this.px_in_mm) +"px",
           transform: "scale("+ this.zoom +")"
         };
-        style[allow_overflow ? "minHeight" : "height"] = this.page_format_mm[1]+"mm";
+        style[allow_overflow ? "minHeight" : "height"] = page_height+"px";
         return style;
       } else {
         // Content/background <div> is sized so it lets a margin around pages when scrolling at the end
-        return { width: "calc("+ bkg_width_mm +"mm + "+ (2*view_padding) +"px)", height: "calc("+ bkg_height_mm +"mm + "+ (2*view_padding) +"px)" };
+        return { width: "calc("+ bkg_width_px +"px + "+ (2*view_padding) +"px)", height: "calc("+ bkg_height_px +"px + "+ (2*view_padding) +"px)" };
       }
     },
 
@@ -466,10 +467,10 @@ export default {
         //const page_clone = page_elt.cloneNode(true);
         page.elt.style = ""; // reset page style for the clone
         page.elt.style.position = "relative";
-        page.elt.style.padding = (typeof this.page_margins == "function") ? this.page_margins(page_idx + 1, this.pages.length) : this.page_margins;
+        page.elt.style.padding = (this.page_margins[0] / this.px_in_mm) + "px "+ (this.page_margins[1] / this.px_in_mm) +"px";
         page.elt.style.breakBefore = page_idx ? "page" : "auto";
-        page.elt.style.width = "calc("+this.page_format_mm[0]+"mm - 2px)";
-        page.elt.style.height = "calc("+this.page_format_mm[1]+"mm - 2px)";
+        page.elt.style.width = "calc("+this.page_format_mm[0] / this.px_in_mm +"px - 2px)";
+        page.elt.style.height = "calc("+this.page_format_mm[1] / this.px_in_mm +"px - 2px)";
         page.elt.style.boxSizing = "border-box";
         page.elt.style.overflow = "hidden";
 
@@ -570,6 +571,19 @@ body {
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
+/* A4 137.8DPI Default */
+@media print and (min-resolution: 300dpi) {
+  body {
+    zoom: 69.74%;
+  }
+}
+
+@media print and (max-resolution: 299dpi) {
+  body {
+    zoom: 19.65%;
+  }
+}
+
 </style>
 <style scoped>
 .editor {
