@@ -469,8 +469,8 @@ export default {
         page.elt.style.position = "relative";
         page.elt.style.padding = (this.page_margins[0] / this.px_in_mm) + "px "+ (this.page_margins[1] / this.px_in_mm) +"px";
         page.elt.style.breakBefore = page_idx ? "page" : "auto";
-        page.elt.style.width = "calc("+this.page_format_mm[0] / this.px_in_mm +"px)";
-        page.elt.style.height = "calc("+this.page_format_mm[1] / this.px_in_mm +"px)";
+        page.elt.style.width = "calc("+this.page_format_mm[0] / this.px_in_mm +"px - 2px)";
+        page.elt.style.height = "calc("+this.page_format_mm[1] / this.px_in_mm +"px - 2px)";
         page.elt.style.boxSizing = "border-box";
         page.elt.style.overflow = "hidden";
 
@@ -570,8 +570,20 @@ body {
   /* Enable printing of background colors */
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
-  zoom: 90%;
 }
+/* A4 137.8DPI Default */
+@media print and (min-resolution: 300dpi) {
+  body {
+    zoom: 69.74%;
+  }
+}
+
+@media print and (max-resolution: 299dpi) {
+  body {
+    zoom: 19.65%;
+  }
+}
+
 </style>
 <style scoped>
 .editor {
