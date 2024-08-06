@@ -58,7 +58,7 @@ export default {
     // Page margins in CSS
     page_margins: {
       type: Array,
-      default:  () => [10, 15]
+      default:  () => [0, 0, 8, 0]
     },
 
     // Display zoom. Only acts on the screen display
@@ -398,7 +398,7 @@ export default {
           top: "calc("+ top_px +"px + "+ view_padding +"px)",
           width: page_width+"px",
           // "height" is set below
-          padding: (this.page_margins[0] / this.px_in_mm) + "px "+ (this.page_margins[1] / this.px_in_mm) +"px",
+          padding: (this.page_margins[0] / this.px_in_mm) + "px " + (this.page_margins[1] / this.px_in_mm) + "px " + (this.page_margins[2] / this.px_in_mm) + "px " + (this.page_margins[3] / this.px_in_mm) + "px",
           transform: "scale("+ this.zoom +")"
         };
         style[allow_overflow ? "minHeight" : "height"] = page_height+"px";
@@ -467,7 +467,7 @@ export default {
         //const page_clone = page_elt.cloneNode(true);
         page.elt.style = ""; // reset page style for the clone
         page.elt.style.position = "relative";
-        page.elt.style.padding = (this.page_margins[0] / this.px_in_mm) + "px "+ (this.page_margins[1] / this.px_in_mm) +"px";
+        page.elt.style.padding = (this.page_margins[0] / this.px_in_mm) + "px " + (this.page_margins[1] / this.px_in_mm) + "px " + (this.page_margins[2] / this.px_in_mm) + "px " + (this.page_margins[3] / this.px_in_mm) + "px";
         page.elt.style.breakBefore = page_idx ? "page" : "auto";
         page.elt.style.width = "calc("+this.page_format_mm[0] / this.px_in_mm +"px - 2px)";
         page.elt.style.height = "calc("+this.page_format_mm[1] / this.px_in_mm +"px - 2px)";

@@ -10,7 +10,7 @@
       :overlay="overlay"
       :zoom="zoom"
       :page_format_mm="page_format_mm"
-      :page_margins="page_margins"
+      :page_margins="[15, 10, 10, 15]"
       :display="display" />
 
   </div>
