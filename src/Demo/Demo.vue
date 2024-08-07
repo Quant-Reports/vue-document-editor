@@ -406,6 +406,13 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.8);
 }
+
+/* set 2 colums each paper except the template */
+.page:not([data-is-template="true"]) {
+  max-height: var(--page-height, 210mm);
+  columns: 2;
+  column-fill: auto;
+}
 </style>
 
 <style scoped>
