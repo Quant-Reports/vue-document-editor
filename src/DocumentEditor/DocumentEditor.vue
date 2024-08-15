@@ -583,18 +583,6 @@ body {
   print-color-adjust: exact;
   --page-height: 210mm
 }
-/* A4 137.8DPI Default */
-@media print and (min-resolution: 300dpi) {
-  body {
-    zoom: 69.74%;
-  }
-}
-
-@media print and (max-resolution: 299dpi) {
-  body {
-    zoom: 19.65%;
-  }
-}
 
 </style>
 <style scoped>
