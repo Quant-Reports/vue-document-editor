@@ -572,14 +572,6 @@ body {
   print-color-adjust: exact;
 }
 
-@media print {
-  .body {
-    zoom: 69.74%;
-    --moz-transform: scale(0.9999);
-    --webkit-transform: none; 
-  }
-}
-
 </style>
 <style scoped>
 .editor {
