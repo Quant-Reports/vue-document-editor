@@ -80,18 +80,25 @@ export default {
       prevent_next_content_update_from_parent: false, // workaround to avoid infinite update loop
       current_text_style: false, // contains the style at caret position
       printing_mode: false, // flag set when page is rendering in printing mode,
-      px_in_mm: 0.18421052631578947368421052631579 // 137.8DPI 
+      px_in_mm: 0.18421052631578947368421052631579, // 137.8DPI
+      observer: null,
     }
   },
 
   mounted () {
+    this.observer = new IntersectionObserver(this.handleObserver, {
+      root: this.$el,
+      threshold: 1.0,
+    })
     this.update_editor_width();
     this.update_css_media_style();
+    this.set_variable_css();
     this.reset_content();
     window.addEventListener("resize", this.update_editor_width);
     window.addEventListener("click", this.process_current_text_style);
     window.addEventListener("beforeprint", this.before_print);
     window.addEventListener("afterprint", this.after_print);
+    // TODO: handle on enter
   },
 
   beforeUpdate () {
@@ -156,7 +163,6 @@ export default {
           customElements.define('component-'+page.uuid, componentElement);
           page.elt.appendChild(new componentElement({ modelValue: page.props }));
         }
-
         // restore page in DOM in case it was removed
         if(!this.$refs.content.contains(page.elt)) this.$refs.content.appendChild(page.elt);
       }
@@ -214,6 +220,8 @@ export default {
         const page = this.pages[page_idx];
         let next_page = this.pages[page_idx + 1];
         let next_page_elt = next_page ? next_page.elt : null;
+        
+        this.set_height_two_columns(page.elt)
 
         // check if this page, the next page, or any previous page content has been modified by the user (don't apply to template pages)
         if(!page.template && (prev_page_modified_flag || page.elt.innerHTML != page.prev_innerHTML
@@ -539,6 +547,50 @@ export default {
     },
     set_variable_css() {
       document.body.style.setProperty('--page-height', `${this.page_format_mm[0]}mm`);
+    },
+
+    // set max height automatically to element has .css-two-columns
+    set_height_two_columns(element) {
+      if (!element) {
+        return
+      }
+      const wrapperContent = element.firstChild
+      const heightOfPaper = element.style.minHeight ? Number(element.style.minHeight.replace('px', '')) : 0
+      const paddingTop = element.style.paddingTop ? Number(element.style.paddingTop.replace('px', '')) : 0
+      const paddingBottom = element.style.paddingBottom ? Number(element.style.paddingBottom.replace('px', '')) : 0
+
+      const heightContent = heightOfPaper - paddingTop - paddingBottom
+
+      if (wrapperContent && wrapperContent.children) {
+
+        let currentHeightOfSiblings = 0
+
+        for (const key in wrapperContent.children) {
+          const child = wrapperContent.children[key];
+          if (typeof child === 'object') {
+            if (child.classList.contains('css-two-columns')) {
+              if (Number(key) > 0) {
+                // TODO: the max height still not perfect. need to improve it
+                child.style.maxHeight = `${heightContent - (currentHeightOfSiblings * 2)}px`;
+                child.style.height = 'fit-content';
+              } else {
+                // TODO: create a style as object and assign it into chlild.style as string with out replacing the existing one
+                child.style.maxHeight = `${heightContent}px`;
+                child.style.height = 'fit-content';
+              }
+            }
+          }
+
+          currentHeightOfSiblings += child.offsetHeight
+        }
+        
+      }
+    },
+    handleObserver(entries, observer) {
+      entries.forEach(({ target, isIntersecting}) => {
+        console.log("masuk sini ga?")
+        this.set_height_two_columns(target)
+      });
     }
   },
 
