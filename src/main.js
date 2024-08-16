@@ -1,9 +1,8 @@
 import { createApp } from 'vue'
-import Demo from './Demo/Demo.vue'
+import Report from './Demo/Report.vue'
 
-const app = createApp(Demo);
+const app = createApp(Report);
 
-// enable devtools for the demo
 app.config.devtools = true;
 
 app.mount('#app');
