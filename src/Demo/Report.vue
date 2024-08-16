@@ -61,7 +61,7 @@ function myContent(){
         zoom_min: 0.10,
         zoom_max: 5.0,
         page_format_mm: [210, 297],
-        page_margins: [10, 15],
+        page_margins: [10, 15, 10 ,15], // top, right, bottom, left
         display: "grid", // ["grid", "vertical", "horizontal"]
         mounted: false, // will be true after this component is mounted
         undo_count: -1, // contains the number of times user can undo (= current position in content_history)
@@ -435,7 +435,7 @@ function myContent(){
   
   /* set 2 colums to the page that have .css-two-columns  */
   .page .css-two-columns {
-    /* max-height: var(--page-height, 210mm); */
+    max-height: var(--page-height, 210mm);
     columns: 2;
     column-fill: auto;
   }
