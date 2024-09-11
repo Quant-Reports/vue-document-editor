@@ -110,7 +110,7 @@ export default {
       const style = document.createElement("style");
       document.head.appendChild(style);
       return style;
-    },
+    }
   },
 
 
@@ -207,7 +207,6 @@ export default {
         range.insertNode(end_marker);
       }
 
-      const page_width_in_px = this.page_format_mm[0] / this.px_in_mm;
       // Browse every remaining page
       let prev_page_modified_flag = false;
       for(let page_idx = 0; page_idx < this.pages.length; page_idx++) { // page length can grow inside this loop
@@ -220,21 +219,17 @@ export default {
           || (next_page_elt && !next_page.template && next_page_elt.innerHTML != next_page.prev_innerHTML))){
           prev_page_modified_flag = true;
 
-          // stop condition when moving the children
-          const stop_condition = () => {
-            return page.elt.clientHeight <= this.pages_height && page.elt.scrollWidth <= page_width_in_px
-          }
-
           // BACKWARD-PROPAGATION
-          // check if content doesn't overflow based on horizontal or vertical, and that next page exists and has the same content_idx
+          // check if content doesn't overflow, and that next page exists and has the same content_idx
           if(page.elt.clientHeight <= this.pages_height && next_page && next_page.content_idx == page.content_idx) {
+
             // try to append every node from the next page until it doesn't fit
-            move_children_backwards_with_merging(page.elt, next_page_elt, () => !next_page_elt.childNodes.length || stop_condition());
+            move_children_backwards_with_merging(page.elt, next_page_elt, () => !next_page_elt.childNodes.length || (page.elt.clientHeight > this.pages_height));
           }
 
           // FORWARD-PROPAGATION
-          // check if content overflows based on horizontal or vertical
-          if(page.elt.clientHeight > this.pages_height || page.elt.scrollWidth > page_width_in_px) {
+          // check if content overflows
+          if(page.elt.clientHeight > this.pages_height) {
 
             // if there is no next page for the same content, create it
             if(!next_page || next_page.content_idx != page.content_idx) {
@@ -245,7 +240,7 @@ export default {
             }
 
             // move the content step by step to the next page, until it fits
-            move_children_forward_recursively(page.elt, next_page_elt, stop_condition, this.do_not_break);
+            move_children_forward_recursively(page.elt, next_page_elt, () => (page.elt.clientHeight <= this.pages_height), this.do_not_break);
           }
 
           // CLEANING
@@ -430,8 +425,6 @@ export default {
           page.elt = document.createElement("div");
           page.elt.className = "page";
           page.elt.dataset.isVDEPage = "";
-          // diferentation between template and content pages
-          page.elt.dataset.isTemplate = `${Boolean(page.template)}`
           const next_page = this.pages[page_idx + 1];
           this.$refs.content.insertBefore(page.elt, next_page ? next_page.elt : null);
         }
@@ -536,9 +529,6 @@ export default {
 
       // recompute editor with and reposition elements
       this.update_editor_width();
-    },
-    set_variable_css() {
-      document.body.style.setProperty('--page-height', `${this.page_format_mm[0]}mm`);
     }
   },
 
@@ -558,7 +548,6 @@ export default {
     },
     page_format_mm: {
       handler () {
-        this.set_variable_css();
         this.update_css_media_style();
         this.reset_content();
       }
@@ -581,7 +570,6 @@ body {
   /* Enable printing of background colors */
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
-  --page-height: 210mm
 }
 
 </style>

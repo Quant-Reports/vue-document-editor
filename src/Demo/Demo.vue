@@ -10,7 +10,7 @@
       :overlay="overlay"
       :zoom="zoom"
       :page_format_mm="page_format_mm"
-      :page_margins="page_margins" 
+      :page_margins="[15, 10, 10, 15]"
       :display="display" />
 
   </div>
@@ -40,7 +40,7 @@ export default {
       zoom_min: 0.10,
       zoom_max: 5.0,
       page_format_mm: [210, 297],
-      page_margins: [10, 15, 10 ,15], // top, right, bottom, left
+      page_margins: [10, 15],
       display: "grid", // ["grid", "vertical", "horizontal"]
       mounted: false, // will be true after this component is mounted
       undo_count: -1, // contains the number of times user can undo (= current position in content_history)
@@ -405,13 +405,6 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.8);
-}
-
-/* set 2 colums each paper except the template */
-.page:not([data-is-template="true"]) {
-  max-height: var(--page-height, 210mm);
-  columns: 2;
-  column-fill: auto;
 }
 </style>
 
