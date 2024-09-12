@@ -122,7 +122,24 @@ export default {
     // use window.removeEventListener in the Vue.js beforeUnmount handler
   },
 
-  mounted () { this.mounted = true; },
+  mounted () { 
+    this.mounted = true; 
+    window.addEventListener('load', function() {
+      var cols2 = document.querySelector('.cols-2');
+      var cols2_list = document.querySelectorAll('.cols-2');
+      var col2_last = cols2_list[cols2_list.length - 1]
+      var page = document.querySelector('.page');
+
+      if (cols2 && page) {
+        var pageHeight = page.clientHeight;
+        var paddingTop = parseFloat(window.getComputedStyle(page).paddingTop);
+        var paddingBottom = parseFloat(window.getComputedStyle(page).paddingBottom);
+
+        col2_last.style.maxHeight = (pageHeight - paddingTop - paddingBottom) + "px";
+        col2_last.style.columnFill = 'auto';
+      }
+    });
+  },
 
   computed: {
 
