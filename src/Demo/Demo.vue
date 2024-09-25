@@ -5,13 +5,8 @@
     <vue-file-toolbar-menu :content="menu" class="bar" />
 
     <!-- Document editor -->
-    <vue-document-editor class="editor" ref="editor"
-      v-model:content="content"
-      :overlay="overlay"
-      :zoom="zoom"
-      :page_format_mm="page_format_mm"
-      :page_margins="page_margins"
-      :display="display" />
+    <vue-document-editor class="editor" ref="editor" v-model:content="content" :overlay="overlay" :zoom="zoom"
+      :page_format_mm="page_format_mm" :page_margins="page_margins" :display="display" />
 
   </div>
 </template>
@@ -21,20 +16,23 @@ import VueFileToolbarMenu from 'vue-file-toolbar-menu';
 import VueDocumentEditor from '../DocumentEditor/DocumentEditor.vue'; // set from 'vue-document-editor' in your application
 import InvoiceTemplate from './InvoiceTemplate.ce.vue';
 import { markRaw } from 'vue';
+import TwoColumnsTemplateCe from './TwoColumnsTemplate.ce.vue';
 
 export default {
   components: { VueDocumentEditor, VueFileToolbarMenu },
 
-  data () {
+  data() {
     return {
       // This is where the pages content is stored and synced
       content: [
         // Every item below produce a page break
-        '<h1>Hello world!</h1><p>This is a rich-text editor built on top of <span contenteditable="false"><a href="https://vuejs.org/" target="_blank">Vue.js</a></span> using the native <span contenteditable="false"><a href="https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Editable_content" target="_blank"><i>contenteditable</i></a></span> browser implementation and some JavaScript trickery to spread content over paper-sized pages.</p><p>Built-in functionality includes:</p><ul><li>Using Vue.js components as interactive page templates (see next page)</li><li>Word-by-word page splitting (<u>still experimental - only for plain HTML content</u>)</li><li>Native Print compatible</li><li>Dynamic document format and margins in millimeters</li><li>Custom page overlays (headers, footers, page numbers)</li><li>Page breaks</li><li>Smart zoom and page display modes</li><li>Computes text style at caret position</li></ul><p>This library may be useful if you design an application that generate documents and you would let the user to modify them slightly before printing / saving, but with limited / interactive possibilities. It does not intend to replace a proper document editor with full functionality.<br>Make sure this project is suitable to your needs before using it.</p><p>This demo adds:</p><ul><li>The top bar (<span contenteditable="false"><a href="https://github.com/motla/vue-file-toolbar-menu" target="_blank">vue-file-toolbar-menu</a></span> component) and the functions associated with it</li><li>Rewritten history stack (undo/redo) compatible with native commands</li><li>Pinch and trackpad zooming</li></ul><p>Check out the <span contenteditable="false"><a href="https://github.com/motla/vue-document-editor/blob/master/src/Demo/Demo.vue" target="_blank">Demo.vue</a></span> file if you need to add these functionalities to your application.</p><p>The link below is an example of non-editable block set with <code>contenteditable="false"</code>:</p><p style="text-align:center" contenteditable="false"><a href="https://github.com/motla/vue-document-editor">View docs on Github</a>, you can\'t edit me.</p><p>But you can still edit this.</p>',
-        { template: markRaw(InvoiceTemplate), props: { invoice_number: "AB38052985" } },
-        '<br><br><h1>Headers / footers example</h1><br>Page numbers have been added on every page of this document.<br>Header and footer overlays will be added from page 3 to all subsequent ones.<br><br>Check out the <code>overlay</code> method of the <span contenteditable="false"><a href="https://github.com/motla/vue-document-editor/blob/master/src/Demo/Demo.vue" target="_blank">Demo.vue</a></span> file to customize this.',
-        '<h1>«</h1><div style="width:80%; text-align:justify; margin:auto"><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. Ut in risus volutpat libero pharetra tempor. Cras vestibulum bibendum augue. Praesent egestas leo in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue blandit sodales. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Aliquam nibh. Mauris ac mauris sed pede pellentesque fermentum. Maecenas adipiscing ante non diam sodales hendrerit.</p><p>Ut velit mauris, egestas sed, gravida nec, ornare ut, mi. Aenean ut orci vel massa suscipit pulvinar. Nulla sollicitudin. Fusce varius, ligula non tempus aliquam, nunc turpis ullamcorper nibh, in tempus sapien eros vitae ligula. Pellentesque rhoncus nunc et augue. Integer id felis. Curabitur aliquet pellentesque diam. Integer quis metus vitae elit lobortis egestas. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Morbi vel erat non mauris convallis vehicula. Nulla et sapien. Integer tortor tellus, aliquam faucibus, convallis id, congue eu, quam. Mauris ullamcorper felis vitae erat. Proin feugiat, augue non elementum posuere, metus purus iaculis lectus, et tristique ligula justo vitae magna.</p><p>Aliquam convallis sollicitudin purus. Praesent aliquam, enim at fermentum mollis, ligula massa adipiscing nisl, ac euismod nibh nisl eu lectus. Fusce vulputate sem at sapien. Vivamus leo. Aliquam euismod libero eu enim. Nulla nec felis sed leo placerat imperdiet. Aenean suscipit nulla in justo. Suspendisse cursus rutrum augue. Nulla tincidunt tincidunt mi. Curabitur iaculis, lorem vel rhoncus faucibus, felis magna fermentum augue, et ultricies lacus lorem varius purus. Curabitur eu amet.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. Ut in risus volutpat libero pharetra tempor. Cras vestibulum bibendum augue. Praesent egestas leo in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue blandit sodales. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Aliquam nibh. Mauris ac mauris sed pede pellentesque fermentum. Maecenas adipiscing ante non diam sodales hendrerit.</p><p>Ut velit mauris, egestas sed, gravida nec, ornare ut, mi. Aenean ut orci vel massa suscipit pulvinar. Nulla sollicitudin. Fusce varius, ligula non tempus aliquam, nunc turpis ullamcorper nibh, in tempus sapien eros vitae ligula. Pellentesque rhoncus nunc et augue. Integer id felis. Curabitur aliquet pellentesque diam. Integer quis metus vitae elit lobortis egestas. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Morbi vel erat non mauris convallis vehicula. Nulla et sapien. Integer tortor tellus, aliquam faucibus, convallis id, congue eu, quam. Mauris ullamcorper felis vitae erat. Proin feugiat, augue non elementum posuere, metus purus iaculis lectus, et tristique ligula justo vitae magna.</p><p>Aliquam convallis sollicitudin purus. Praesent aliquam, enim at fermentum mollis, ligula massa adipiscing nisl, ac euismod nibh nisl eu lectus. Fusce vulputate sem at sapien. Vivamus leo. Aliquam euismod libero eu enim. Nulla nec felis sed leo placerat imperdiet. Aenean suscipit nulla in justo. Suspendisse cursus rutrum augue. Nulla tincidunt tincidunt mi. Curabitur iaculis, lorem vel rhoncus faucibus, felis magna fermentum augue, et ultricies lacus lorem varius purus. Curabitur eu amet.</p></div><h1 style="text-align:right">»</h1>',
-        '<h3 style="text-align:center">--- This is a page break. ---</h3>'
+        '<div class="template grid-2-cols" contenteditable="true"><h1>Hello world!</h1><p>This is a rich-text editor built on top of<span contenteditable="false"><a href="https://vuejs.org/" target="_blank">Vue.js</a></span>using the native<span contenteditable="false"><a href="https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Editable_content" target="_blank"><i>contenteditable</i></a></span>browser implementation and some JavaScript trickery to spread content over paper-sized pages.</p><p>Built-in functionality includes:</p><ul><li>Using Vue.js components as interactive page templates (see next page)</li><li>Word-by-word page splitting (<u>still experimental - only for plain HTML content</u>)</li><li>Native Print compatible</li><li>Dynamic document format and margins in millimeters</li><li>Custom page overlays (headers, footers, page numbers)</li><li>Page breaks</li><li>Smart zoom and page display modes</li><li>Computes text style at caret position</li></ul><ul><li>Using Vue.js components as interactive page templates (see next page)</li><li>Word-by-word page splitting (<u>still experimental - only for plain HTML content</u>)</li><li>Native Print compatible</li><li>Dynamic document format and margins in millimeters</li><li>Custom page overlays (headers, footers, page numbers)</li><li>Page breaks</li><li>Smart zoom and page display modes</li><li>Computes text style at caret position</li></ul><ul><li>Using Vue.js components as interactive page templates (see next page)</li><li>Word-by-word page splitting (<u>still experimental - only for plain HTML content</u>)</li><li>Native Print compatible</li><li>Dynamic document format and margins in millimeters</li><li>Custom page overlays (headers, footers, page numbers)</li><li>Page breaks</li><li>Smart zoom and page display modes</li><li>Computes text style at caret position</li></ul><ul><li>Using Vue.js components as interactive page templates (see next page)</li><li>Word-by-word page splitting (<u>still experimental - only for plain HTML content</u>)</li><li>Native Print compatible</li><li>Dynamic document format and margins in millimeters</li><li>Custom page overlays (headers, footers, page numbers)</li><li>Page breaks</li><li>Smart zoom and page display modes</li><li>Computes text style at caret position</li></ul><p>This library may be useful if you design an application that generate documents and you would let the user to modify them slightly before printing / saving, but with limited / interactive possibilities. It does not intend to replace a proper document editor with full functionality.<br>Make sure this project is suitable to your needs before using it.</p><p>This demo adds:</p><ul><li>The top bar (<span contenteditable="false"><a href="https://github.com/motla/vue-file-toolbar-menu" target="_blank">vue-file-toolbar-menu</a></span>component) and the functions associated with it</li><li>Rewritten history stack (undo/redo) compatible with native commands</li><li>Pinch and trackpad zooming</li></ul><p>Check out the<span contenteditable="false"><a href="https://github.com/motla/vue-document-editor/blob/master/src/Demo/Demo.vue" target="_blank">Demo.vue</a></span>file if you need to add these functionalities to your application.</p><p>The link below is an example of non-editable block set with<code>contenteditable="false"</code>:</p><p style="text-align:center" contenteditable="false"><a href="https://github.com/motla/vue-document-editor">View docs on Github</a>, you can\'t edit me.</p><p>But you can still edit this.</p><div style="break-after:always"></div></div>',
+        // { template: markRaw(InvoiceTemplate), props: { invoice_number: "AB38052985" } },
+        // '<br><br><h1>Headers / footers example</h1><br>Page numbers have been added on every page of this document.<br>Header and footer overlays will be added from page 3 to all subsequent ones.<br><br>Check out the <code>overlay</code> method of the <span contenteditable="false"><a href="https://github.com/motla/vue-document-editor/blob/master/src/Demo/Demo.vue" target="_blank">Demo.vue</a></span> file to customize this.',
+        // '<h1>«</h1><div style="width:80%; text-align:justify; margin:auto"><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. Ut in risus volutpat libero pharetra tempor. Cras vestibulum bibendum augue. Praesent egestas leo in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue blandit sodales. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Aliquam nibh. Mauris ac mauris sed pede pellentesque fermentum. Maecenas adipiscing ante non diam sodales hendrerit.</p><p>Ut velit mauris, egestas sed, gravida nec, ornare ut, mi. Aenean ut orci vel massa suscipit pulvinar. Nulla sollicitudin. Fusce varius, ligula non tempus aliquam, nunc turpis ullamcorper nibh, in tempus sapien eros vitae ligula. Pellentesque rhoncus nunc et augue. Integer id felis. Curabitur aliquet pellentesque diam. Integer quis metus vitae elit lobortis egestas. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Morbi vel erat non mauris convallis vehicula. Nulla et sapien. Integer tortor tellus, aliquam faucibus, convallis id, congue eu, quam. Mauris ullamcorper felis vitae erat. Proin feugiat, augue non elementum posuere, metus purus iaculis lectus, et tristique ligula justo vitae magna.</p><p>Aliquam convallis sollicitudin purus. Praesent aliquam, enim at fermentum mollis, ligula massa adipiscing nisl, ac euismod nibh nisl eu lectus. Fusce vulputate sem at sapien. Vivamus leo. Aliquam euismod libero eu enim. Nulla nec felis sed leo placerat imperdiet. Aenean suscipit nulla in justo. Suspendisse cursus rutrum augue. Nulla tincidunt tincidunt mi. Curabitur iaculis, lorem vel rhoncus faucibus, felis magna fermentum augue, et ultricies lacus lorem varius purus. Curabitur eu amet.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. Ut in risus volutpat libero pharetra tempor. Cras vestibulum bibendum augue. Praesent egestas leo in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue blandit sodales. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Aliquam nibh. Mauris ac mauris sed pede pellentesque fermentum. Maecenas adipiscing ante non diam sodales hendrerit.</p><p>Ut velit mauris, egestas sed, gravida nec, ornare ut, mi. Aenean ut orci vel massa suscipit pulvinar. Nulla sollicitudin. Fusce varius, ligula non tempus aliquam, nunc turpis ullamcorper nibh, in tempus sapien eros vitae ligula. Pellentesque rhoncus nunc et augue. Integer id felis. Curabitur aliquet pellentesque diam. Integer quis metus vitae elit lobortis egestas. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Morbi vel erat non mauris convallis vehicula. Nulla et sapien. Integer tortor tellus, aliquam faucibus, convallis id, congue eu, quam. Mauris ullamcorper felis vitae erat. Proin feugiat, augue non elementum posuere, metus purus iaculis lectus, et tristique ligula justo vitae magna.</p><p>Aliquam convallis sollicitudin purus. Praesent aliquam, enim at fermentum mollis, ligula massa adipiscing nisl, ac euismod nibh nisl eu lectus. Fusce vulputate sem at sapien. Vivamus leo. Aliquam euismod libero eu enim. Nulla nec felis sed leo placerat imperdiet. Aenean suscipit nulla in justo. Suspendisse cursus rutrum augue. Nulla tincidunt tincidunt mi. Curabitur iaculis, lorem vel rhoncus faucibus, felis magna fermentum augue, et ultricies lacus lorem varius purus. Curabitur eu amet.</p></div><h1 style="text-align:right">»</h1>',
+        // '<h3 style="text-align:center">--- This is a page break. ---</h3>',
+        // '<h3 style="text-align:center">--- This is another page break. ---</h3>',
+        
       ],
       zoom: 0.8,
       zoom_min: 0.10,
@@ -48,7 +46,7 @@ export default {
     }
   },
 
-  created () {
+  created() {
     // Initialize gesture flags
     let start_zoom_gesture = false;
     let start_dist_touch = false;
@@ -56,7 +54,7 @@ export default {
 
     // Manage ctrl+scroll zoom (or trackpad pinch)
     window.addEventListener("wheel", (e) => {
-      if(e.ctrlKey){
+      if (e.ctrlKey) {
         e.preventDefault();
         this.zoom = Math.min(Math.max(this.zoom - e.deltaY * 0.01, this.zoom_min), this.zoom_max);
       }
@@ -69,7 +67,7 @@ export default {
     });
     window.addEventListener("gesturechange", (e) => {
       e.preventDefault();
-      if(!start_zoom_touch){
+      if (!start_zoom_touch) {
         this.zoom = Math.min(Math.max(start_zoom_gesture * e.scale, this.zoom_min), this.zoom_max);
       }
     });
@@ -105,7 +103,7 @@ export default {
 
     // Manage history undo/redo events
     const manage_undo_redo = (e) => {
-      switch(e && e.inputType){
+      switch (e && e.inputType) {
         case "historyUndo": e.preventDefault(); e.stopPropagation(); this.undo(); break;
         case "historyRedo": e.preventDefault(); e.stopPropagation(); this.redo(); break;
       }
@@ -117,15 +115,15 @@ export default {
     // use window.removeEventListener in the Vue.js beforeUnmount handler
   },
 
-  mounted () { this.mounted = true; },
+  mounted() { this.mounted = true; },
 
   computed: {
 
     // This is the menu content
-    menu () {
+    menu() {
       return [
         // Main commands
-        { text: "New", title: "New", icon: "description", click: () => { if(confirm("This will create an empty document. Are you sure?")){ this.content = [""]; this.resetContentHistory(); } } },
+        { text: "New", title: "New", icon: "description", click: () => { if (confirm("This will create an empty document. Are you sure?")) { this.content = [""]; this.resetContentHistory(); } } },
         { text: "Print", title: "Print", icon: "print", click: () => window.print() },
 
         { is: "spacer" },
@@ -153,9 +151,9 @@ export default {
         { html: "<b>H1</b>", title: "Header 1", active: this.isH1, disabled: !this.current_text_style, click: () => document.execCommand('formatBlock', false, '<h1>') },
         { html: "<b>H2</b>", title: "Header 2", active: this.isH2, disabled: !this.current_text_style, click: () => document.execCommand('formatBlock', false, '<h2>') },
         { html: "<b>H3</b>", title: "Header 3", active: this.isH3, disabled: !this.current_text_style, click: () => document.execCommand('formatBlock', false, '<h3>') },
-        { icon: "format_clear", title: "Clear format", disabled: !this.current_text_style, click () { document.execCommand('removeFormat'); document.execCommand('formatBlock', false, '<div>'); } },
+        { icon: "format_clear", title: "Clear format", disabled: !this.current_text_style, click() { document.execCommand('removeFormat'); document.execCommand('formatBlock', false, '<div>'); } },
         { icon: "splitscreen", title: "Page break", disabled: !this.current_text_style, click: () => this.insertPageBreak() },
-        
+
         { is: "spacer" },
 
         { // Format menu
@@ -180,7 +178,7 @@ export default {
           chevron: true,
           menu: this.margins.map(([text, value]) => {
             return {
-              text: text+" ("+value+")",
+              text: text + " (" + value + ")",
               active: (this.page_margins == value),
               click: () => { this.page_margins = value; }
             }
@@ -236,9 +234,9 @@ export default {
     },
 
     // Formats management
-    current_format_name () {
+    current_format_name() {
       const format = this.formats.find(([, width_mm, height_mm]) => (this.page_format_mm[0] == width_mm && this.page_format_mm[1] == height_mm));
-      return format ? format[0] : (this.page_format_mm[0]+"mm x "+this.page_format_mm[1]+"mm");
+      return format ? format[0] : (this.page_format_mm[0] + "mm x " + this.page_format_mm[1] + "mm");
     },
     formats: () => [
       ["A0", 841, 1189],
@@ -258,7 +256,7 @@ export default {
     ],
 
     // Margins management
-    current_margins_name () {
+    current_margins_name() {
       const margins = this.margins.find(([, margins]) => (this.page_margins == margins));
       return margins ? margins[0] : this.page_margins;
     },
@@ -270,47 +268,47 @@ export default {
     ],
 
     // Current text style management
-    current_text_style () { return this.mounted ? this.$refs.editor.current_text_style : false; },
-    isLeftAligned () { return ["start", "left", "-moz-left"].includes(this.current_text_style.textAlign); },
-    isRightAligned () { return ["end", "right", "-moz-right"].includes(this.current_text_style.textAlign); },
-    isCentered () { return ["center", "-moz-center"].includes(this.current_text_style.textAlign); },
-    isJustified () { return ["justify", "justify-all"].includes(this.current_text_style.textAlign); },
-    isBold () {
+    current_text_style() { return this.mounted ? this.$refs.editor.current_text_style : false; },
+    isLeftAligned() { return ["start", "left", "-moz-left"].includes(this.current_text_style.textAlign); },
+    isRightAligned() { return ["end", "right", "-moz-right"].includes(this.current_text_style.textAlign); },
+    isCentered() { return ["center", "-moz-center"].includes(this.current_text_style.textAlign); },
+    isJustified() { return ["justify", "justify-all"].includes(this.current_text_style.textAlign); },
+    isBold() {
       const fontWeight = this.current_text_style.fontWeight;
       return fontWeight && (parseInt(fontWeight) > 400 || fontWeight.indexOf("bold") == 0);
     },
-    isItalic () { return this.current_text_style.fontStyle == "italic"; },
-    isUnderline () { // text-decoration is not overridden by children, so we query the parent stack
+    isItalic() { return this.current_text_style.fontStyle == "italic"; },
+    isUnderline() { // text-decoration is not overridden by children, so we query the parent stack
       const stack = this.current_text_style.textDecorationStack;
       return stack && stack.some(d => (d.indexOf("underline") == 0));
     },
-    isStrikeThrough () { // text-decoration is not overridden by children, so we query the parent stack
+    isStrikeThrough() { // text-decoration is not overridden by children, so we query the parent stack
       const stack = this.current_text_style.textDecorationStack;
       return stack && stack.some(d => (d.indexOf("line-through") == 0));
     },
-    isNumberedList () { return this.current_text_style.isList && this.current_text_style.listStyleType == "decimal"; },
-    isBulletedList () { return this.current_text_style.isList && ["disc", "circle"].includes(this.current_text_style.listStyleType); },
-    isH1 () { return this.current_text_style.headerLevel == 1; },
-    isH2 () { return this.current_text_style.headerLevel == 2; },
-    isH3 () { return this.current_text_style.headerLevel == 3; },
-    curColor () { return this.current_text_style.color || "transparent"; },
+    isNumberedList() { return this.current_text_style.isList && this.current_text_style.listStyleType == "decimal"; },
+    isBulletedList() { return this.current_text_style.isList && ["disc", "circle"].includes(this.current_text_style.listStyleType); },
+    isH1() { return this.current_text_style.headerLevel == 1; },
+    isH2() { return this.current_text_style.headerLevel == 2; },
+    isH3() { return this.current_text_style.headerLevel == 3; },
+    curColor() { return this.current_text_style.color || "transparent"; },
 
     // Platform management
     isMacLike: () => /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform),
 
     // Undo / redo flags
-    can_undo () { return this.undo_count > 0; },
-    can_redo () { return this.content_history.length - this.undo_count - 1 > 0; }
+    can_undo() { return this.undo_count > 0; },
+    can_redo() { return this.content_history.length - this.undo_count - 1 > 0; }
   },
 
   methods: {
     // Page overlays (headers, footers, page numbers)
-    overlay (page, total) {
+    overlay(page, total) {
       // Add page numbers on each page
       let html = '<div style="position: absolute; bottom: 8mm; ' + ((page % 2) ? 'right' : 'left') + ': 10mm">Page ' + page + ' of ' + total + '</div>';
 
       // Add custom headers and footers from page 3
-      if(page >= 3) {
+      if (page >= 3) {
         html += '<div style="position: absolute; left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5)"><strong>MYCOMPANY</strong> example.com /// This is a custom header overlay</div>';
         html += '<div style="position: absolute; left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt">MY COMPANY - example.com /// This is a custom footer overlay</div>';
       }
@@ -318,12 +316,12 @@ export default {
     },
 
     // Undo / redo functions examples
-    undo () { if(this.can_undo){ this._mute_next_content_watcher = true; this.content = this.content_history[--this.undo_count]; } },
-    redo () { if(this.can_redo){ this._mute_next_content_watcher = true; this.content = this.content_history[++this.undo_count]; } },
-    resetContentHistory () { this.content_history = []; this.undo_count = -1; },
+    undo() { if (this.can_undo) { this._mute_next_content_watcher = true; this.content = this.content_history[--this.undo_count]; } },
+    redo() { if (this.can_redo) { this._mute_next_content_watcher = true; this.content = this.content_history[++this.undo_count]; } },
+    resetContentHistory() { this.content_history = []; this.undo_count = -1; },
 
     // Insert page break function example
-    async insertPageBreak () {
+    async insertPageBreak() {
       // insert paragraph at caret position
       document.execCommand("insertParagraph");
 
@@ -337,25 +335,25 @@ export default {
 
       // find the marker inside content items and split this content item in two items between the two paragraphs
       // only match root tags (p, div, h1, h2...) to avoid non-root tags like <li>
-      const regexp = new RegExp("<(p|div|h\\d)( [^/>]+)*>(<[^/>]+>)*"+marker);
-      for(let i = 0; i < this.content.length; i++) {
+      const regexp = new RegExp("<(p|div|h\\d)( [^/>]+)*>(<[^/>]+>)*" + marker);
+      for (let i = 0; i < this.content.length; i++) {
         const item = this.content[i];
-        if(typeof item != "string") continue;
+        if (typeof item != "string") continue;
         const match = regexp.exec(item);
-        if(match) {
+        if (match) {
           const tags_open = match[0].slice(0, -marker.length);
           let content_plus_tags_close = item.substr(match.index + match[0].length);
           // insert <br> to empty pages that would not be handled correctly by contenteditable
-          if(content_plus_tags_close.indexOf("</") == 0) content_plus_tags_close = "<br>" + content_plus_tags_close;
+          if (content_plus_tags_close.indexOf("</") == 0) content_plus_tags_close = "<br>" + content_plus_tags_close;
           this.content.splice(i, 1, item.substr(0, match.index), tags_open + content_plus_tags_close);
           return;
         }
       }
 
       // if the code didn't return before, the split didn't work (e.g. inside a <li>). just remove the marker from the content
-      for(let i = 0; i < this.content.length; i++) {
+      for (let i = 0; i < this.content.length; i++) {
         const item = this.content[i];
-        if(typeof item != "string" || item.indexOf(marker) < 0) continue;
+        if (typeof item != "string" || item.indexOf(marker) < 0) continue;
         this.content.splice(i, 1, item.replace(marker, ''));
         break;
       }
@@ -366,8 +364,8 @@ export default {
     content: {
       immediate: true,
       // Fill undo / redo history stack on user input
-      handler (new_content) {
-        if(!this._mute_next_content_watcher) { // only update the stack when content is changed by user input, not undo/redo commands
+      handler(new_content) {
+        if (!this._mute_next_content_watcher) { // only update the stack when content is changed by user input, not undo/redo commands
           this.content_history[++this.undo_count] = new_content;
           this.content_history.length = this.undo_count + 1; // remove all redo items
         }
@@ -382,6 +380,7 @@ export default {
 html {
   height: 100%;
 }
+
 body {
   margin: 0;
   font-family: Avenir, Helvetica, Arial, sans-serif;
@@ -390,41 +389,47 @@ body {
   color: black;
   background: rgb(248, 249, 250);
 }
+
 ::-webkit-scrollbar {
   width: 16px;
   height: 16px;
 }
-::-webkit-scrollbar-track, ::-webkit-scrollbar-corner {
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
   display: none;
 }
+
 ::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.5);
   border: 5px solid transparent;
   border-radius: 16px;
   background-clip: content-box;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.8);
 }
 </style>
 
 <style scoped>
-  .main {
-    width: fit-content;
-    min-width: 100%;
-  }
-  .bar {
-    position: sticky;
-    left: 0;
-    top: 0;
-    width: calc(100vw - 16px);
-    z-index: 1000;
-    background: rgba(248, 249, 250, 0.8);
-    border-bottom: solid 1px rgb(248, 249, 250);
-    backdrop-filter: blur(10px);
-    --bar-button-active-color: #188038;
-    --bar-button-open-color: #188038;
-    --bar-button-active-bkg: #e6f4ea;
-    --bar-button-open-bkg: #e6f4ea;
-  }
+.main {
+  width: fit-content;
+  min-width: 100%;
+}
+
+.bar {
+  position: sticky;
+  left: 0;
+  top: 0;
+  width: calc(100vw - 16px);
+  z-index: 1000;
+  background: rgba(248, 249, 250, 0.8);
+  border-bottom: solid 1px rgb(248, 249, 250);
+  backdrop-filter: blur(10px);
+  --bar-button-active-color: #188038;
+  --bar-button-open-color: #188038;
+  --bar-button-active-bkg: #e6f4ea;
+  --bar-button-open-bkg: #e6f4ea;
+}
 </style>

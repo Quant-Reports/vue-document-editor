@@ -178,7 +178,7 @@ export default {
       // Prevent launching this function multiple times
       if(this.fit_in_progress) return;
       this.fit_in_progress = true;
-
+      
       // Check pages that were deleted from the DOM (start from the end)
       for(let page_idx = this.pages.length - 1; page_idx >= 0; page_idx--) {
         const page = this.pages[page_idx];
@@ -242,6 +242,42 @@ export default {
             move_children_forward_recursively(page.elt, next_page_elt, () => (page.elt.clientHeight <= this.pages_height), this.do_not_break);
           }
 
+          console.log(page.elt.firstChild.firstChild);
+          if (page.elt.firstChild.firstChild.classList.contains('grid-2-cols')) {
+            const items = page.elt.firstChild.firstChild.children;
+            let lastColumnLeft = 0;
+            let col = 0;
+
+            // Loop through each item in the container
+            Array.from(items).forEach(item => {
+              const itemRect = item.getBoundingClientRect();
+
+              // Find the left position of the last column by detecting the max left position
+              if (itemRect.left > lastColumnLeft) {
+                lastColumnLeft = itemRect.left;
+                col += 1;
+              }
+            });
+
+            // Now remove all items in the last column
+            if (col > 2) {
+              const newItemsToNewPage = []
+              Array.from(items).forEach(item => {
+                const itemRect = item.getBoundingClientRect();
+
+                // Check if the item is in the last column
+                if (itemRect.left >= lastColumnLeft) {
+                  newItemsToNewPage.push(item.clone());
+                  item.remove();
+                }
+              });
+
+              if (newItemsToNewPage.length > 0) {
+                move_children_forward_recursively(page.elt, next_page_elt, () => (page.elt.clientHeight <= this.pages_height), this.do_not_break);
+              }
+            }
+          }
+
           // CLEANING
           // remove next page if it is empty
           if(next_page_elt && next_page.content_idx == page.content_idx && !next_page_elt.childNodes.length) {
@@ -281,6 +317,7 @@ export default {
     // Input event
     input (e) {
       if(!e) return; // check that event is set
+
       this.fit_content_over_pages(); // fit content according to modifications
       this.emit_new_content(); // emit content modification
       if(e.inputType != "insertText") this.process_current_text_style(); // update current style if it has changed
@@ -605,6 +642,12 @@ body {
   padding: 0;
   min-width: 100%;
   pointer-events: none;
+}
+.editor > .content > :deep(.page) .grid-2-cols {
+  max-height: var(--page-height, 277mm);
+  max-width: var(--page-width, 190mm);
+  columns: 2;
+  column-fill: auto;
 }
 .editor > .content > :deep(.page) {
   position: absolute;
