@@ -241,6 +241,51 @@ export default {
             // move the content step by step to the next page, until it fits
             move_children_forward_recursively(page.elt, next_page_elt, () => (page.elt.clientHeight <= this.pages_height), this.do_not_break);
           }
+
+          const grid_2_cols = page.elt.querySelector('.grid-2-cols');
+          if (grid_2_cols) {
+            const items = grid_2_cols.children;
+            let lastColumnLeft = 0;
+            let col = 0;
+
+            // Loop through each item in the container
+            Array.from(items).forEach(item => {
+              const itemRect = item.getBoundingClientRect();
+
+              // Find the left position of the last column by detecting the max left position
+              if (itemRect.left > lastColumnLeft) {
+                lastColumnLeft = itemRect.left;
+                col += 1;
+              }
+            });
+
+            console.log(col);
+
+            // Now remove all items in the last column
+            if (col > 2) {
+              const newItemsToNewPage = []
+
+              Array.from(items).forEach(item => {
+                const itemRect = item.getBoundingClientRect();
+
+                // Check if the item is in the last column
+                if (itemRect.left >= lastColumnLeft) {
+                  newItemsToNewPage.push(item.cloneNode(true));
+                  item.remove();
+                }
+              });
+
+              if (newItemsToNewPage.length > 0) {
+                move_children_forward_recursively(page.elt, next_page_elt, () => (page.elt.clientHeight <= this.pages_height), this.do_not_break);
+              }
+            }
+          }
+
+          // CLEANING
+          // remove next page if it is empty
+          if(next_page_elt && next_page.content_idx == page.content_idx && !next_page_elt.childNodes.length) {
+            this.pages.splice(page_idx + 1, 1);
+          }
         }
 
         // update pages in the DOM
@@ -361,6 +406,9 @@ export default {
       const page_with_plus_spacing = (page_spacing_mm + this.page_format_mm[0]) * this.zoom / px_in_mm;
       const view_padding = 20;
       const inner_width = this.editor_width - 2 * view_padding;
+      const page_height = this.page_format_mm[1]+"mm";
+      const [page_margin_y, _] = this.page_margins.split(" ");
+      
       let nb_pages_x = 1, page_column, x_pos, x_ofx, left_px, top_mm, bkg_width_mm, bkg_height_mm;
       if(this.display == "horizontal") {
         if(inner_width > (this.pages.length * page_with_plus_spacing)){
@@ -385,12 +433,13 @@ export default {
         bkg_width_mm = this.zoom * (this.page_format_mm[0] * nb_pages_x + (nb_pages_x - 1) * page_spacing_mm);
         bkg_height_mm = this.zoom * (this.page_format_mm[1] * nb_pages_y + (nb_pages_y - 1) * page_spacing_mm);
       }
-      
-      const page_height = this.page_format_mm[1]+"mm";
-      const [page_margin_y, _] = this.page_margins.split(" ");
+
+      const styles = {
+        '--page-height': `calc(${page_height} - ${page_margin_y} - ${page_margin_y})`
+      }
 
       if(page_idx >= 0) {
-        const style = {
+        return {
           position: "absolute",
           left: "calc("+ left_px +"px + "+ view_padding +"px)",
           top: "calc("+ top_mm +"mm + "+ view_padding +"px)",
@@ -398,16 +447,15 @@ export default {
           // "height" is set below
           padding: (typeof this.page_margins == "function") ? this.page_margins(page_idx + 1, this.pages.length) : this.page_margins,
           transform: "scale("+ this.zoom +")",
-          '--page-height': `calc(${page_height} - ${page_margin_y} - ${page_margin_y})`
-        };
-        style[allow_overflow ? "minHeight" : "height"] = this.page_format_mm[1]+"mm";
-        return style;
+          ...(allow_overflow ? { minHeight: this.page_format_mm[1]+"mm" } : { height: this.page_format_mm[1]+"mm" }),
+          ...styles
+        }
       } else {
         // Content/background <div> is sized so it lets a margin around pages when scrolling at the end
         return {
           width: "calc("+ bkg_width_mm +"mm + "+ (2*view_padding) +"px)",
           height: "calc("+ bkg_height_mm +"mm + "+ (2*view_padding) +"px)", 
-          '--page-height': `calc(${page_height} - ${page_margin_y} - ${page_margin_y})`
+          ...styles
         };
       }
     },
