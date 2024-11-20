@@ -154,16 +154,18 @@ export default {
 
       // Get page height from first empty page
       const first_page_elt = this.pages[0].elt;
+
       if (!this.$refs.content.contains(first_page_elt))
         this.$refs.content.appendChild(first_page_elt); // restore page in DOM in case it was removed
+
       this.pages_height = first_page_elt.clientHeight + 1; // allow one pixel precision
 
       // Initialize text pages
       for (const page of this.pages) {
         // set raw HTML content
         if (!this.content[page.content_idx])
-          page.elt.innerHTML =
-            "<div><br></div>"; // ensure empty pages are filled with at least <div><br></div>, otherwise editing fails on Chrome
+          page.elt.innerHTML = "<div><br></div>";
+        // ensure empty pages are filled with at least <div><br></div>, otherwise editing fails on Chrome
         else if (typeof this.content[page.content_idx] == "string")
           page.elt.innerHTML =
             "<div>" + this.content[page.content_idx] + "</div>";
@@ -296,46 +298,38 @@ export default {
 
           const grid_2_cols = page.elt.querySelector(".grid-2-cols");
           if (grid_2_cols) {
-            const items = grid_2_cols.children;
-            let lastColumnLeft = 0;
-            let col = 0;
-
-            // Loop through each item in the container
-            Array.from(items).forEach((item) => {
-              const itemRect = item.getBoundingClientRect();
-
-              // Find the left position of the last column by detecting the max left position
-              if (itemRect.left > lastColumnLeft) {
-                lastColumnLeft = itemRect.left;
-                col += 1;
-              }
-            });
-
-            console.log(col);
-
-            // Now remove all items in the last column
-            if (col > 2) {
-              const newItemsToNewPage = [];
-
-              Array.from(items).forEach((item) => {
-                const itemRect = item.getBoundingClientRect();
-
-                // Check if the item is in the last column
-                if (itemRect.left >= lastColumnLeft) {
-                  newItemsToNewPage.push(item.cloneNode(true));
-                  item.remove();
-                }
-              });
-
-              if (newItemsToNewPage.length > 0) {
-                move_children_forward_recursively(
-                  page.elt,
-                  next_page_elt,
-                  () => page.elt.clientHeight <= this.pages_height,
-                  this.do_not_break
-                );
-              }
+            if (!next_page || next_page.content_idx != page.content_idx) {
+              next_page = {
+                uuid: this.new_uuid(),
+                content_idx: page.content_idx,
+              };
+              this.pages.splice(page_idx + 1, 0, next_page);
+              this.update_pages_elts();
+              next_page_elt = next_page.elt;
             }
+
+            move_children_forward_recursively(
+              page.elt,
+              next_page_elt,
+              () => {
+                let lastColumnLeft = 0;
+                let col = 0;
+                let items = grid_2_cols.children;
+                // Loop through each item in the container
+                for (let i = 0; i < items.length; i++) {
+                  const itemRect = items[i].getBoundingClientRect();
+
+                  // Find the left position of the last column by detecting the max left position
+                  if (itemRect.left > lastColumnLeft) {
+                    lastColumnLeft = itemRect.left;
+                    col += 1;
+                  }
+                }
+
+                return col <= 2;
+              },
+              this.do_not_break
+            );
           }
 
           // CLEANING
@@ -412,12 +406,6 @@ export default {
               .map((page) => {
                 // remove any useless <div> surrounding the content
                 let elt = page.elt;
-
-                const twoCols = elt.querySelector(".grid-2-cols");
-                if (twoCols) {
-                  twoCols.classList.remove("grid-2-cols");
-                  elt.firstChild.classList.add("grid-2-cols");
-                }
 
                 while (
                   elt.children.length == 1 &&
@@ -788,26 +776,32 @@ body {
   -moz-osx-font-smoothing: grayscale;
   cursor: default;
 }
+
 .editor ::-webkit-scrollbar {
   width: 16px;
   height: 16px;
 }
+
 .editor ::-webkit-scrollbar-track,
 .editor ::-webkit-scrollbar-corner {
   display: none;
 }
+
 .editor ::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.5);
   border: 5px solid transparent;
   border-radius: 16px;
   background-clip: content-box;
 }
+
 .editor ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.8);
 }
+
 .editor .hide_children > * {
   display: none;
 }
+
 .editor > .content {
   position: relative;
   outline: none;
@@ -816,14 +810,18 @@ body {
   min-width: 100%;
   pointer-events: none;
 }
+
 .editor > .content > :deep(.page) .grid-2-cols {
   max-height: var(--page-height, 277mm);
   max-width: var(--page-width, 190mm);
   columns: 2;
   column-fill: auto;
-  column-gap: 20px; /* Adjust the gap between columns */
-  overflow: hidden; /* Prevent overflow issues */
+  column-gap: 20px;
+  /* Adjust the gap between columns */
+  overflow-x: scroll;
+  /* Prevent overflow issues */
 }
+
 .editor > .content > :deep(.page) {
   position: absolute;
   box-sizing: border-box;
@@ -837,13 +835,16 @@ body {
   overflow: hidden;
   pointer-events: all;
 }
+
 .editor > .content[contenteditable],
 .editor > .content :deep(*[contenteditable]) {
   cursor: text;
 }
+
 .editor > .content :deep(*[contenteditable="false"]) {
   cursor: default;
 }
+
 .editor > .overlays {
   position: relative;
   margin: 0;
@@ -851,6 +852,7 @@ body {
   min-width: 100%;
   pointer-events: none;
 }
+
 .editor > .overlays > .overlay {
   position: absolute;
   box-sizing: border-box;
