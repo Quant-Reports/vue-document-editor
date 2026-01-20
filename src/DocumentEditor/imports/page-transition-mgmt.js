@@ -45,7 +45,6 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
 
         // Handle long continuous words
         if (!sub_child_hashes || sub_child_hashes.length === 1) {
-          console.log('Handling long continuous word');
           const long_word = sub_child_text;
           // const split_point = ; // Split the word in half
 
@@ -79,7 +78,6 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
     // Handle elements that can be moved without breaking
     else if (!sub_child.childNodes.length || sub_child.tagName.match(/h\d|tr/i) || (typeof do_not_break === "function" && do_not_break(sub_child))) {
       if (!not_first_child) {
-        console.log("Move-forward: first child reached with no stop condition. Aborting");
         return;
       }
       child_sibling.prepend(sub_child);
