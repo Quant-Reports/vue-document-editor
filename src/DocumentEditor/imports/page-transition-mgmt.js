@@ -26,12 +26,17 @@ function find_sub_child_sibling_node (container, s_tag){
  * @param {boolean?} not_first_child Should be unset. Used internally to let at least one child in the page
  */
 function move_children_forward_recursively(child, child_sibling, stop_condition, do_not_break, not_first_child) {
+  const fragment = document.createDocumentFragment();
+  let pending_operations = [];
+  let should_stop = false;
+  
+  const h_or_tr_regex = /^(h[1-6]|tr)$/i;
 
-  // if the child still has nodes and the current page still overflows
-  while(child.childNodes.length && !stop_condition()){
-
+  while(child.childNodes.length && !should_stop){
+    const childNodes_length = child.childNodes.length;
+    
     // check if page has only one child tree left
-    not_first_child = not_first_child || (child.childNodes.length != 1);
+    not_first_child = not_first_child || (childNodes_length != 1);
 
     // select the last sub-child
     const sub_child = child.lastChild;
@@ -45,42 +50,83 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
 
         // Handle long continuous words
         if (!sub_child_hashes || sub_child_hashes.length === 1) {
-          const long_word = sub_child_text;
-          // const split_point = ; // Split the word in half
-
-          // Move the second half of the word to the next page
-          sub_child.textContent = sub_child_text.slice(0, sub_child_text.length - 1);
-          const sub_child_continuation = document.createTextNode(sub_child_text.slice(-1));
-          child_sibling.prepend(sub_child_continuation);
-
-          // Check stop condition and return if met
-          if (stop_condition()) return;
+          // Binary search approach for large words
+          let start = 0;
+          let end = sub_child_text.length;
+          
+          while (start < end - 1 && !should_stop) {
+            const mid = Math.floor((start + end) / 2);
+            
+            sub_child.textContent = sub_child_text.slice(0, mid);
+            const sub_child_continuation = document.createTextNode(sub_child_text.slice(mid));
+            child_sibling.prepend(sub_child_continuation);
+            
+            should_stop = stop_condition();
+            if (!should_stop) {
+              end = mid;
+            } else {
+              // Undo and try larger portion
+              child_sibling.removeChild(sub_child_continuation);
+              start = mid;
+              should_stop = false;
+            }
+          }
+          
+          if (should_stop) return;
           continue;
         }
 
-        // Proceed with normal text handling
+        // Proceed with normal text handling - optimized with batching
         const sub_child_continuation = document.createTextNode('');
         child_sibling.prepend(sub_child_continuation);
-        const l = sub_child_hashes ? sub_child_hashes.length : 0;
+        const l = sub_child_hashes.length;
         
-        for (let i = 0; i < l; i++) {
-          if (i == l - 1 && !not_first_child) return;
+        // Binary search for optimal split point instead of linear
+        let left = 0;
+        let right = l;
+        let best_split = 0;
+        
+        while (left < right && !should_stop) {
+          const mid = Math.floor((left + right) / 2);
+          
+          if (mid == l - 1 && !not_first_child) {
+            should_stop = true;
+            return;
+          }
           
           // Move content from current page to the next
-          sub_child.textContent = sub_child_hashes.slice(0, l - i - 1).join('');
-          sub_child_continuation.textContent = sub_child_hashes.slice(l - i - 1).join('');
+          sub_child.textContent = sub_child_hashes.slice(0, l - mid - 1).join('');
+          sub_child_continuation.textContent = sub_child_hashes.slice(l - mid - 1).join('');
           
-          // Check stop condition and return if met
-          if (stop_condition()) return;
+          // Check stop condition
+          should_stop = stop_condition();
+          
+          if (should_stop) {
+            best_split = mid;
+            right = mid;
+            should_stop = false;
+          } else {
+            left = mid + 1;
+          }
         }
+        
+        // Apply best split
+        if (best_split > 0) {
+          sub_child.textContent = sub_child_hashes.slice(0, l - best_split - 1).join('');
+          sub_child_continuation.textContent = sub_child_hashes.slice(l - best_split - 1).join('');
+          should_stop = stop_condition();
+        }
+        
+        if (should_stop) return;
       }
     }
     // Handle elements that can be moved without breaking
-    else if (!sub_child.childNodes.length || sub_child.tagName.match(/h\d|tr/i) || (typeof do_not_break === "function" && do_not_break(sub_child))) {
+    else if (!sub_child.childNodes.length || (sub_child.tagName && h_or_tr_regex.test(sub_child.tagName)) || (typeof do_not_break === "function" && do_not_break(sub_child))) {
       if (!not_first_child) {
         return;
       }
       child_sibling.prepend(sub_child);
+      should_stop = stop_condition();
     }
 
     // for every other node that is not text and not the first child, clone it recursively to next page
@@ -102,11 +148,15 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
       // then move/clone its children and sub-children recursively
       move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child);
       sub_child_sibling.normalize(); // merge consecutive text nodes
+      
+      should_stop = stop_condition();
     }
 
     // Clean up child if it's emptied during the process
     if (child.contains(sub_child)) {
-      if(sub_child.childNodes.length == 0 || sub_child.innerHTML == "") {
+      const has_content = sub_child.childNodes.length > 0 && sub_child.innerHTML !== "";
+      
+      if(!has_content) {
         child.removeChild(sub_child);
       } else if (!stop_condition()) {
         console.error("Document editor is trying to remove a non-empty sub-child:", sub_child, "in parent:", child);
