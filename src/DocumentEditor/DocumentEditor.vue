@@ -240,7 +240,10 @@ export default {
             }
 
             // move the content step by step to the next page, until it fits
-            move_children_forward_recursively(page.elt, next_page_elt, () => (page.elt.clientHeight <= this.pages_height), this.do_not_break);
+            // Cache page element and height for faster condition checks
+            const page_elt = page.elt;
+            const max_height = this.pages_height;
+            move_children_forward_recursively(page_elt, next_page_elt, () => (page_elt.clientHeight <= max_height), this.do_not_break);
           }
 
           // CLEANING
