@@ -26,17 +26,13 @@ function find_sub_child_sibling_node (container, s_tag){
  * @param {boolean?} not_first_child Should be unset. Used internally to let at least one child in the page
  */
 function move_children_forward_recursively(child, child_sibling, stop_condition, do_not_break, not_first_child) {
-  const fragment = document.createDocumentFragment();
-  let pending_operations = [];
-  let should_stop = false;
-  
   const h_or_tr_regex = /^(h[1-6]|tr)$/i;
+  const has_do_not_break = typeof do_not_break === "function";
+  let should_stop = false;
 
   while(child.childNodes.length && !should_stop){
-    const childNodes_length = child.childNodes.length;
-    
     // check if page has only one child tree left
-    not_first_child = not_first_child || (childNodes_length != 1);
+    not_first_child = not_first_child || (child.childNodes.length != 1);
 
     // select the last sub-child
     const sub_child = child.lastChild;
@@ -46,89 +42,79 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
       const sub_child_text = sub_child.textContent;
       
       if (sub_child_text.length > 0) {
-        let sub_child_hashes = sub_child_text.match(/(\s|\S+)/g);
+        const sub_child_hashes = sub_child_text.match(/(\s|\S+)/g);
 
-        // Handle long continuous words
+        // Handle long continuous words with binary search
         if (!sub_child_hashes || sub_child_hashes.length === 1) {
-          // Binary search approach for large words
           let start = 0;
           let end = sub_child_text.length;
+          const sub_child_continuation = document.createTextNode('');
+          child_sibling.prepend(sub_child_continuation);
           
-          while (start < end - 1 && !should_stop) {
-            const mid = Math.floor((start + end) / 2);
-            
+          while (start < end - 1) {
+            const mid = Math.ceil((start + end) / 2);
             sub_child.textContent = sub_child_text.slice(0, mid);
-            const sub_child_continuation = document.createTextNode(sub_child_text.slice(mid));
-            child_sibling.prepend(sub_child_continuation);
+            sub_child_continuation.textContent = sub_child_text.slice(mid);
             
-            should_stop = stop_condition();
-            if (!should_stop) {
-              end = mid;
-            } else {
-              // Undo and try larger portion
-              child_sibling.removeChild(sub_child_continuation);
+            if (stop_condition()) {
               start = mid;
-              should_stop = false;
+            } else {
+              end = mid;
             }
           }
           
+          // Final adjustment
+          sub_child.textContent = sub_child_text.slice(0, start);
+          sub_child_continuation.textContent = sub_child_text.slice(start);
+          should_stop = stop_condition();
           if (should_stop) return;
           continue;
         }
 
-        // Proceed with normal text handling - optimized with batching
+        // Handle normal text with binary search for optimal split point
         const sub_child_continuation = document.createTextNode('');
         child_sibling.prepend(sub_child_continuation);
-        const l = sub_child_hashes.length;
+        const total_words = sub_child_hashes.length;
         
-        // Binary search for optimal split point instead of linear
         let left = 0;
-        let right = l;
-        let best_split = 0;
+        let right = total_words;
         
-        while (left < right && !should_stop) {
-          const mid = Math.floor((left + right) / 2);
+        // Binary search to find the split point
+        while (left < right - 1) {
+          const mid = Math.ceil((left + right) / 2);
           
-          if (mid == l - 1 && !not_first_child) {
+          // Check if this would leave the page empty (last word and first child)
+          if (mid === total_words && !not_first_child) {
             should_stop = true;
             return;
           }
           
-          // Move content from current page to the next
-          sub_child.textContent = sub_child_hashes.slice(0, l - mid - 1).join('');
-          sub_child_continuation.textContent = sub_child_hashes.slice(l - mid - 1).join('');
+          // Apply the split
+          sub_child.textContent = sub_child_hashes.slice(0, total_words - mid).join('');
+          sub_child_continuation.textContent = sub_child_hashes.slice(total_words - mid).join('');
           
-          // Check stop condition
-          should_stop = stop_condition();
-          
-          if (should_stop) {
-            best_split = mid;
-            right = mid;
-            should_stop = false;
+          // Check if content fits
+          if (stop_condition()) {
+            left = mid;
           } else {
-            left = mid + 1;
+            right = mid;
           }
         }
         
-        // Apply best split
-        if (best_split > 0) {
-          sub_child.textContent = sub_child_hashes.slice(0, l - best_split - 1).join('');
-          sub_child_continuation.textContent = sub_child_hashes.slice(l - best_split - 1).join('');
-          should_stop = stop_condition();
-        }
-        
+        // Apply final split position
+        sub_child.textContent = sub_child_hashes.slice(0, total_words - left).join('');
+        sub_child_continuation.textContent = sub_child_hashes.slice(total_words - left).join('');
+        should_stop = stop_condition();
         if (should_stop) return;
       }
     }
     // Handle elements that can be moved without breaking
-    else if (!sub_child.childNodes.length || (sub_child.tagName && h_or_tr_regex.test(sub_child.tagName)) || (typeof do_not_break === "function" && do_not_break(sub_child))) {
-      if (!not_first_child) {
-        return;
-      }
+    else if (!sub_child.childNodes.length || (sub_child.tagName && h_or_tr_regex.test(sub_child.tagName)) || (has_do_not_break && do_not_break(sub_child))) {
+      if (!not_first_child) return;
+      
       child_sibling.prepend(sub_child);
       should_stop = stop_condition();
     }
-
     // for every other node that is not text and not the first child, clone it recursively to next page
     else {
       // check if sub child has already been cloned before
@@ -137,8 +123,7 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
       // if not, create it and watermark the relationship with a random tag
       if(!sub_child_sibling) {
         if(!sub_child.s_tag) {
-          const new_random_tag = Math.random().toString(36).slice(2, 8);
-          sub_child.s_tag = new_random_tag;
+          sub_child.s_tag = Math.random().toString(36).slice(2, 8);
         }
         sub_child_sibling = sub_child.cloneNode(false);
         sub_child_sibling.s_tag = sub_child.s_tag;
@@ -147,7 +132,11 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
       
       // then move/clone its children and sub-children recursively
       move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child);
-      sub_child_sibling.normalize(); // merge consecutive text nodes
+      
+      // Only normalize if we actually moved text nodes
+      if(sub_child_sibling.childNodes.length > 1) {
+        sub_child_sibling.normalize();
+      }
       
       should_stop = stop_condition();
     }
@@ -158,9 +147,8 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
       
       if(!has_content) {
         child.removeChild(sub_child);
-      } else if (!stop_condition()) {
+      } else if (!should_stop) {
         console.error("Document editor is trying to remove a non-empty sub-child:", sub_child, "in parent:", child);
-
         throw Error("Document editor is trying to remove a non-empty sub-child. This "
       + "is a bug and should not happen. Please report a repeatable set of actions that "
       + "leaded to this error to https://github.com/motla/vue-document-editor/issues/new");
