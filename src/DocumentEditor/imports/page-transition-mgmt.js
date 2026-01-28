@@ -112,48 +112,8 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
     else if (!sub_child.childNodes.length || (sub_child.tagName && h_or_tr_regex.test(sub_child.tagName)) || (has_do_not_break && do_not_break(sub_child))) {
       if (!not_first_child) return;
       
-      // Check if moving this do-not-break element would cause it to overflow on the next page
-      // If the next page already contains only this element and it still overflows, we need to break it
-      const is_do_not_break_element = has_do_not_break && do_not_break(sub_child);
-      const next_page_will_have_only_this = child_sibling.childNodes.length === 0;
-      
-      if (is_do_not_break_element && next_page_will_have_only_this) {
-        // Temporarily move it to check if it fits
-        child_sibling.prepend(sub_child);
-        const still_overflows = !stop_condition();
-        
-        if (still_overflows && sub_child.childNodes.length > 0) {
-          // Element is too large even alone on a page - break it anyway to prevent infinite loop
-          console.warn('Document editor: do-not-break element is too large to fit on a single page. Breaking it to prevent lag.');
-          
-          // Find sibling or create it
-          let sub_child_sibling = find_sub_child_sibling_node(child_sibling, sub_child.s_tag);
-          if(!sub_child_sibling) {
-            if(!sub_child.s_tag) {
-              sub_child.s_tag = Math.random().toString(36).slice(2, 8);
-            }
-            sub_child_sibling = sub_child.cloneNode(false);
-            sub_child_sibling.s_tag = sub_child.s_tag;
-          }
-          
-          // Move it back and process its children instead
-          child.appendChild(sub_child);
-          child_sibling.prepend(sub_child_sibling);
-          move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child);
-          
-          if(sub_child_sibling.childNodes.length > 1) {
-            sub_child_sibling.normalize();
-          }
-          should_stop = stop_condition();
-        } else {
-          // It fits, continue normally
-          should_stop = !still_overflows;
-        }
-      } else {
-        // Normal case: move element without breaking
-        child_sibling.prepend(sub_child);
-        should_stop = stop_condition();
-      }
+      child_sibling.prepend(sub_child);
+      should_stop = stop_condition();
     }
     // for every other node that is not text and not the first child, clone it recursively to next page
     else {
@@ -189,7 +149,9 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
         child.removeChild(sub_child);
       } else if (!should_stop) {
         console.error("Document editor is trying to remove a non-empty sub-child:", sub_child, "in parent:", child);
-        return;
+        throw Error("Document editor is trying to remove a non-empty sub-child. This "
+      + "is a bug and should not happen. Please report a repeatable set of actions that "
+      + "leaded to this error to https://github.com/motla/vue-document-editor/issues/new");
       }
     }
   }
