@@ -9,7 +9,7 @@
     </div>
 
     <!-- Document editor -->
-    <div class="content" ref="content" :contenteditable="editable" :style="page_style(-1)" @input="input" @keyup="process_current_text_style">
+    <div class="content" ref="content" :contenteditable="editable" :style="page_style(-1)" @input="input" @keydown="handle_keydown" @keyup="process_current_text_style">
       <!-- This is a Vue "hoisted" static <div> which contains every page of the document and can be modified by the DOM -->
     </div>
 
@@ -240,7 +240,10 @@ export default {
             }
 
             // move the content step by step to the next page, until it fits
-            move_children_forward_recursively(page.elt, next_page_elt, () => (page.elt.clientHeight <= this.pages_height), this.do_not_break);
+            // Cache page element and height for faster condition checks
+            const page_elt = page.elt;
+            const max_height = this.pages_height;
+            move_children_forward_recursively(page_elt, next_page_elt, () => (page_elt.clientHeight <= max_height), this.do_not_break);
           }
 
           // CLEANING
@@ -357,6 +360,81 @@ export default {
         }
       }
       this.current_text_style = style;
+    },
+
+    // Handle keydown events, especially Enter key in do-not-break elements
+    handle_keydown (event) {
+      // Only handle Enter key
+      if (event.key !== 'Enter' || !this.do_not_break) return;
+
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+      
+      // Find if we're inside a do-not-break element
+      let doNotBreakElement = null;
+      let currentElement = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+      
+      while (currentElement && currentElement !== this.$refs.content) {
+        if (currentElement.classList && this.do_not_break(currentElement)) {
+          doNotBreakElement = currentElement;
+          break;
+        }
+        currentElement = currentElement.parentElement;
+      }
+
+      // If we're inside a do-not-break element
+      if (doNotBreakElement) {
+        // Check if cursor is at the very start or very end of the do-not-break element
+        const isAtStart = this.is_cursor_at_start(doNotBreakElement, range);
+        const isAtEnd = this.is_cursor_at_end(doNotBreakElement, range);
+
+        if (isAtStart || isAtEnd) {
+          event.preventDefault();
+          
+          // Create a new div element for the new line
+          const newDiv = document.createElement('div');
+          newDiv.innerHTML = '<br>';
+          
+          if (isAtStart) {
+            // Insert before the do-not-break element
+            doNotBreakElement.parentElement.insertBefore(newDiv, doNotBreakElement);
+          } else {
+            // Insert after the do-not-break element
+            doNotBreakElement.parentElement.insertBefore(newDiv, doNotBreakElement.nextSibling);
+          }
+          
+          // Move cursor to the new line
+          const newRange = document.createRange();
+          newRange.setStart(newDiv, 0);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          
+          // Trigger input event to update content
+          this.$refs.content.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+    },
+
+    // Helper: Check if cursor is at the start of an element
+    is_cursor_at_start (element, range) {
+      const tempRange = document.createRange();
+      tempRange.selectNodeContents(element);
+      tempRange.setEnd(range.startContainer, range.startOffset);
+      const textBeforeCursor = tempRange.toString().trim();
+      return textBeforeCursor.length === 0;
+    },
+
+    // Helper: Check if cursor is at the end of an element
+    is_cursor_at_end (element, range) {
+      const tempRange = document.createRange();
+      tempRange.selectNodeContents(element);
+      tempRange.setStart(range.endContainer, range.endOffset);
+      const textAfterCursor = tempRange.toString().trim();
+      return textAfterCursor.length === 0;
     },
 
     // Process the specific style (position and size) of each page <div> and content <div>
