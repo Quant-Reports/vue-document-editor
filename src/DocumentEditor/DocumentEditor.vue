@@ -243,7 +243,35 @@ export default {
             // Cache page element and height for faster condition checks
             const page_elt = page.elt;
             const max_height = this.pages_height;
-            move_children_forward_recursively(page_elt, next_page_elt, () => (page_elt.clientHeight <= max_height), this.do_not_break);
+            
+            // Create iteration tracker with chunking to prevent UI freeze
+            const iteration_tracker = { 
+              count: 0, 
+              chunk_size: 200  // Process 200 iterations per chunk
+            };
+            
+            const process_chunk = () => {
+              const chunk_start = iteration_tracker.count;
+              move_children_forward_recursively(
+                page_elt, 
+                next_page_elt, 
+                () => {
+                  iteration_tracker.count++;
+                  const chunk_iterations = iteration_tracker.count - chunk_start;
+                  if (chunk_iterations >= iteration_tracker.chunk_size) {
+                    return true;
+                  }
+                  
+                  return page_elt.clientHeight <= max_height;
+                }, 
+                this.do_not_break
+              );
+              if (page_elt.clientHeight > max_height) {
+                requestAnimationFrame(process_chunk);
+              }
+            };
+            
+            process_chunk();
           }
 
           // CLEANING
