@@ -14,89 +14,135 @@ function find_sub_child_sibling_node (container, s_tag){
 }
 
 
+// Global state for batch processing
+let move_children_processing = false;
+const MAX_OPERATIONS_PER_BATCH = 1000;
+
 /**
  * This function moves every sub-child of argument "child" to the start of the "child_sibling"
  * argument, beginning from the last child, with word splitting and format preserving.
- * Typically, "child" is the current page which content overflows, and "child_sibling" is the 
+ * Typically, "child" is the current page which content overflows, and "child_sibling" is the
  * next page.
  * @param {HTMLElement} child Element to take children from (current page)
  * @param {HTMLElement} child_sibling Element to copy children to (next page)
  * @param {function} stop_condition Check function that returns a boolean if content doesn't overflow anymore
  * @param {function(HTMLElement):boolean?} do_not_break Optional function that receives the current child element and should return true if the child should not be split over two pages but rather be moved directly to the next page
  * @param {boolean?} not_first_child Should be unset. Used internally to let at least one child in the page
+ * @param {number} operationCount Internal counter for batch processing
  */
-function move_children_forward_recursively (child, child_sibling, stop_condition, do_not_break, not_first_child) {
+function move_children_forward_recursively (child, child_sibling, stop_condition, do_not_break, not_first_child, operationCount = 0) {
 
-  // if the child still has nodes and the current page still overflows
-  while(child.childNodes.length && !stop_condition()){
+  // Prevent concurrent execution
+  if(move_children_processing && operationCount === 0) {
+    return;
+  }
+  move_children_processing = true;
 
-    // check if page has only one child tree left
-    not_first_child = not_first_child || (child.childNodes.length != 1);
+  const process_batch = (child, child_sibling, not_first_child, opCount) => {
+    // if the child still has nodes and the current page still overflows
+    while(child.childNodes.length && !stop_condition()){
 
-    // select the last sub-child
-    const sub_child = child.lastChild;
-
-    // if it is a text node, move its content to next page word(/space) by word
-    if(sub_child.nodeType == Node.TEXT_NODE){
-      const sub_child_hashes = sub_child.textContent.match(/(\s|\S+)/g);
-      const sub_child_continuation = document.createTextNode('');
-      child_sibling.prepend(sub_child_continuation);
-      const l = sub_child_hashes ? sub_child_hashes.length : 0;
-      for(let i = 0; i < l; i++) {
-        if(i == l - 1 && !not_first_child) return; // never remove the first word of the page
-        sub_child.textContent = sub_child_hashes.slice(0, l - i - 1).join('');
-        sub_child_continuation.textContent = sub_child_hashes.slice(l - i - 1, l).join('');
-        if(stop_condition()) return;
-      }
-    }
-
-    // we simply move it to the next page if it is either:
-    // - a node with no content (e.g. <img>)
-    // - a header title (e.g. <h1>)
-    // - a table row (e.g. <tr>)
-    // - any element on whose user-custom `do_not_break` function returns true
-    else if(!sub_child.childNodes.length || sub_child.tagName.match(/h\d/i) || sub_child.tagName.match(/tr/i) || (typeof do_not_break === "function" && do_not_break(sub_child))) {
-      // just prevent moving the last child of the page
-      if(!not_first_child){
-        console.log("Move-forward: first child reached with no stop condition. Aborting");
+      // Check if we've exceeded the batch size and need to yield
+      if(opCount >= MAX_OPERATIONS_PER_BATCH) {
+        requestAnimationFrame(() => {
+          move_children_forward_recursively(child, child_sibling, stop_condition, do_not_break, not_first_child, 0);
+        });
         return;
       }
-      child_sibling.prepend(sub_child);
-    }
 
-    // for every other node that is not text and not the first child, clone it recursively to next page
-    else {
-      // check if sub child has already been cloned before
-      let sub_child_sibling = find_sub_child_sibling_node(child_sibling, sub_child.s_tag);
-      
-      // if not, create it and watermark the relationship with a random tag
-      if(!sub_child_sibling) {
-        if(!sub_child.s_tag) {
-          const new_random_tag = Math.random().toString(36).slice(2, 8);
-          sub_child.s_tag = new_random_tag;
+      opCount++;
+
+      // check if page has only one child tree left
+      not_first_child = not_first_child || (child.childNodes.length != 1);
+
+      // select the last sub-child
+      const sub_child = child.lastChild;
+
+      // if it is a text node, move its content to next page word(/space) by word
+      if(sub_child.nodeType == Node.TEXT_NODE){
+        const sub_child_hashes = sub_child.textContent.match(/(\s|\S+)/g);
+        const sub_child_continuation = document.createTextNode('');
+        child_sibling.prepend(sub_child_continuation);
+        const l = sub_child_hashes ? sub_child_hashes.length : 0;
+        for(let i = 0; i < l; i++) {
+          if(i == l - 1 && !not_first_child) { // never remove the first word of the page
+            move_children_processing = false;
+            return;
+          }
+          sub_child.textContent = sub_child_hashes.slice(0, l - i - 1).join('');
+          sub_child_continuation.textContent = sub_child_hashes.slice(l - i - 1, l).join('');
+          if(stop_condition()) {
+            move_children_processing = false;
+            return;
+          }
         }
-        sub_child_sibling = sub_child.cloneNode(false);
-        sub_child_sibling.s_tag = sub_child.s_tag;
-        child_sibling.prepend(sub_child_sibling);
       }
-      
-      // then move/clone its children and sub-children recursively
-      move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child);
-      sub_child_sibling.normalize(); // merge consecutive text nodes
-    }
 
-    // if sub_child was a container that was cloned and is now empty, we clean it
-    if(child.contains(sub_child)){
-      if(sub_child.childNodes.length == 0 || sub_child.innerHTML == "") child.removeChild(sub_child);
-      else if(!stop_condition()) {
-        // the only case when it can be non empty should be when stop_condition is now true
-        console.log("sub_child:", sub_child, "that is in child:", child);
-        throw Error("Document editor is trying to remove a non-empty sub-child. This "
+      // we simply move it to the next page if it is either:
+      // - a node with no content (e.g. <img>)
+      // - a header title (e.g. <h1>)
+      // - a table row (e.g. <tr>)
+      // - any element on whose user-custom `do_not_break` function returns true
+      else if(!sub_child.childNodes.length || sub_child.tagName.match(/h\d/i) || sub_child.tagName.match(/tr/i) || (typeof do_not_break === "function" && do_not_break(sub_child))) {
+        // just prevent moving the last child of the page
+        if(!not_first_child){
+          console.log("Move-forward: first child reached with no stop condition. Aborting");
+          move_children_processing = false;
+          return;
+        }
+        child_sibling.prepend(sub_child);
+      }
+
+      // for every other node that is not text and not the first child, clone it recursively to next page
+      else {
+        // check if sub child has already been cloned before
+        let sub_child_sibling = find_sub_child_sibling_node(child_sibling, sub_child.s_tag);
+
+        // if not, create it and watermark the relationship with a random tag
+        if(!sub_child_sibling) {
+          if(!sub_child.s_tag) {
+            const new_random_tag = Math.random().toString(36).slice(2, 8);
+            sub_child.s_tag = new_random_tag;
+          }
+          sub_child_sibling = sub_child.cloneNode(false);
+          sub_child_sibling.s_tag = sub_child.s_tag;
+          child_sibling.prepend(sub_child_sibling);
+        }
+
+        // then move/clone its children and sub-children recursively
+        move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child, opCount);
+        sub_child_sibling.normalize(); // merge consecutive text nodes
+
+        // Check if we returned from a recursive call with yielded processing
+        if(move_children_processing === false && opCount >= MAX_OPERATIONS_PER_BATCH) {
+          return; // Exit early if the recursive call initiated a yield
+        }
+        // Reset processing flag if recursive call completed
+        if(opCount < MAX_OPERATIONS_PER_BATCH) {
+          move_children_processing = true;
+        }
+      }
+
+      // if sub_child was a container that was cloned and is now empty, we clean it
+      if(child.contains(sub_child)){
+        if(sub_child.childNodes.length == 0 || sub_child.innerHTML == "") {
+          child.removeChild(sub_child);
+        } else if(!stop_condition()) {
+          // the only case when it can be non empty should be when stop_condition is now true
+          console.log("sub_child:", sub_child, "that is in child:", child);
+          move_children_processing = false;
+          throw Error("Document editor is trying to remove a non-empty sub-child. This "
       + "is a bug and should not happen. Please report a repeatable set of actions that "
       + "leaded to this error to https://github.com/motla/vue-document-editor/issues/new");
+        }
       }
     }
-  }
+
+    // Mark processing as complete when done
+    move_children_processing = false;
+  };
+
+  process_batch(child, child_sibling, not_first_child, operationCount);
 }
 
 
