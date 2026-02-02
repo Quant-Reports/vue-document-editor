@@ -31,12 +31,15 @@ const MAX_OPERATIONS_PER_BATCH = 1000;
  * @param {number} operationCount Internal counter for batch processing
  */
 function move_children_forward_recursively (child, child_sibling, stop_condition, do_not_break, not_first_child, operationCount = 0) {
-
-  // Prevent concurrent execution
   if(move_children_processing && operationCount === 0) {
     return;
   }
   move_children_processing = true;
+
+  // Track progress to detect infinite loops
+  let initial_child_height = child.clientHeight;
+  let initial_child_nodes = child.childNodes.length;
+  let progress_made = false;
 
   const process_batch = (child, child_sibling, not_first_child, opCount) => {
     // if the child still has nodes and the current page still overflows
@@ -44,6 +47,22 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
 
       // Check if we've exceeded the batch size and need to yield
       if(opCount >= MAX_OPERATIONS_PER_BATCH) {
+        // Check if we made any progress in this batch
+        const current_child_height = child.clientHeight;
+        const current_child_nodes = child.childNodes.length;
+
+        if (!progress_made && initial_child_height === current_child_height && initial_child_nodes === current_child_nodes) {
+          // No progress made after a full batch - we're stuck (likely due to do_not_break element being too large)
+          console.warn("move_children_forward_recursively: No progress detected. The content may be too large to fit. Aborting.");
+          move_children_processing = false;
+          return;
+        }
+
+        // Update initial state for next batch
+        initial_child_height = current_child_height;
+        initial_child_nodes = current_child_nodes;
+        progress_made = false;
+
         requestAnimationFrame(() => {
           move_children_forward_recursively(child, child_sibling, stop_condition, do_not_break, not_first_child, 0);
         });
@@ -75,6 +94,7 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
             move_children_processing = false;
             return;
           }
+          progress_made = true; // We moved some text
         }
       }
 
@@ -91,6 +111,7 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
           return;
         }
         child_sibling.prepend(sub_child);
+        progress_made = true; // We moved an element
       }
 
       // for every other node that is not text and not the first child, clone it recursively to next page
@@ -121,12 +142,18 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
         if(opCount < MAX_OPERATIONS_PER_BATCH) {
           move_children_processing = true;
         }
+
+        // Check if we made progress in the recursive call
+        if (sub_child.childNodes.length === 0 || sub_child.innerHTML === "") {
+          progress_made = true; // We emptied a child
+        }
       }
 
       // if sub_child was a container that was cloned and is now empty, we clean it
       if(child.contains(sub_child)){
         if(sub_child.childNodes.length == 0 || sub_child.innerHTML == "") {
           child.removeChild(sub_child);
+          progress_made = true; // We removed a child
         } else if(!stop_condition()) {
           // the only case when it can be non empty should be when stop_condition is now true
           console.log("sub_child:", sub_child, "that is in child:", child);
@@ -138,7 +165,6 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
       }
     }
 
-    // Mark processing as complete when done
     move_children_processing = false;
   };
 
