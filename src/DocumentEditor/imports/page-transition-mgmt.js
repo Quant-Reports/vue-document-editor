@@ -16,7 +16,7 @@ function find_sub_child_sibling_node (container, s_tag){
 
 // Global state for batch processing
 let move_children_processing = false;
-const MAX_OPERATIONS_PER_BATCH = 1000;
+const MAX_OPERATIONS_PER_BATCH = 5;
 
 /**
  * This function moves every sub-child of argument "child" to the start of the "child_sibling"
@@ -44,9 +44,9 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
   const process_batch = (child, child_sibling, not_first_child, opCount) => {
     // if the child still has nodes and the current page still overflows
     while(child.childNodes.length && !stop_condition()){
-
       // Check if we've exceeded the batch size and need to yield
       if(opCount >= MAX_OPERATIONS_PER_BATCH) {
+
         // Check if we made any progress in this batch
         const current_child_height = child.clientHeight;
         const current_child_nodes = child.childNodes.length;
@@ -156,11 +156,8 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
           progress_made = true; // We removed a child
         } else if(!stop_condition()) {
           // the only case when it can be non empty should be when stop_condition is now true
-          console.log("sub_child:", sub_child, "that is in child:", child);
           move_children_processing = false;
-          throw Error("Document editor is trying to remove a non-empty sub-child. This "
-      + "is a bug and should not happen. Please report a repeatable set of actions that "
-      + "leaded to this error to https://github.com/motla/vue-document-editor/issues/new");
+          return;
         }
       }
     }
