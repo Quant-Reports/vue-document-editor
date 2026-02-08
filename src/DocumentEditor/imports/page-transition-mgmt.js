@@ -16,7 +16,7 @@ function find_sub_child_sibling_node (container, s_tag){
 
 // Global state for batch processing
 let move_children_processing = false;
-const MAX_OPERATIONS_PER_BATCH = 5;
+const MAX_OPERATIONS_PER_BATCH = 1000;
 
 /**
  * This function moves every sub-child of argument "child" to the start of the "child_sibling"
