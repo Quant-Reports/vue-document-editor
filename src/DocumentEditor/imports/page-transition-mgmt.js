@@ -104,6 +104,14 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
       // - a table row (e.g. <tr>)
       // - any element on whose user-custom `do_not_break` function returns true
       else if(!sub_child.childNodes.length || sub_child.tagName.match(/h\d/i) || sub_child.tagName.match(/tr/i) || (typeof do_not_break === "function" && do_not_break(sub_child))) {
+        if (do_not_break && do_not_break(sub_child)) {
+          if (sub_child.clientHeight >= child.clientHeight) {
+            console.warn("move_children_forward_recursively: do_not_break element is larger than the page. Aborting to prevent infinite loop.");
+            move_children_processing = false;
+            return;
+          }
+        }
+
         // just prevent moving the last child of the page
         if(!not_first_child){
           console.log("Move-forward: first child reached with no stop condition. Aborting");
