@@ -44,9 +44,9 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
   const process_batch = (child, child_sibling, not_first_child, opCount) => {
     // if the child still has nodes and the current page still overflows
     while(child.childNodes.length && !stop_condition()){
-
       // Check if we've exceeded the batch size and need to yield
       if(opCount >= MAX_OPERATIONS_PER_BATCH) {
+
         // Check if we made any progress in this batch
         const current_child_height = child.clientHeight;
         const current_child_nodes = child.childNodes.length;
@@ -104,6 +104,14 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
       // - a table row (e.g. <tr>)
       // - any element on whose user-custom `do_not_break` function returns true
       else if(!sub_child.childNodes.length || sub_child.tagName.match(/h\d/i) || sub_child.tagName.match(/tr/i) || (typeof do_not_break === "function" && do_not_break(sub_child))) {
+        if (do_not_break && do_not_break(sub_child)) {
+          if (sub_child.clientHeight >= child.clientHeight) {
+            console.warn("move_children_forward_recursively: do_not_break element is larger than the page. Aborting to prevent infinite loop.");
+            move_children_processing = false;
+            return;
+          }
+        }
+
         // just prevent moving the last child of the page
         if(!not_first_child){
           console.log("Move-forward: first child reached with no stop condition. Aborting");
@@ -156,11 +164,8 @@ function move_children_forward_recursively (child, child_sibling, stop_condition
           progress_made = true; // We removed a child
         } else if(!stop_condition()) {
           // the only case when it can be non empty should be when stop_condition is now true
-          console.log("sub_child:", sub_child, "that is in child:", child);
           move_children_processing = false;
-          throw Error("Document editor is trying to remove a non-empty sub-child. This "
-      + "is a bug and should not happen. Please report a repeatable set of actions that "
-      + "leaded to this error to https://github.com/motla/vue-document-editor/issues/new");
+          return;
         }
       }
     }

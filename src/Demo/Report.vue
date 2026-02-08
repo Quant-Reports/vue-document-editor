@@ -35,35 +35,13 @@ function myContent(){
       </div>
     </div>
   `;
-    return [
+    let content = [
       `<h1>A. Two Columns CSS Auto Height</h1>
-      <div class="css-two-columns">
-       ` + dummyText.repeat(20) + `
-      </div>`,
-
-      `<h1>B. Two Columns CSS Defined Height</h1>
-      <h2>B1. This is One column</h2>
-      <div>
-        ` + dummyText.repeat(4) + `
-      </div>
-      <h2>B2. This is Three columns</h2>
-      <div class="css-two-columns" min-height="300px">
-        ` + dummyText.repeat(2) + `
-      </div>
-      <h2>B3. This is One column</h2>
-      <div>
-        ` + dummyText.repeat(4) + `
-      </div>
-      <h2>B3. This is Table Do Not Break</h2>
-      <div>
-        ` + tableExample.repeat(10) +`
-        ` + dummyText.repeat(4) + `
-      <h2>B4. This is One column</h2>
-      <div>
-        ` + dummyText.repeat(100) + `
-      </div>
-      `
+        ` + tableExample.repeat(1) +`
+        ` + dummyText.repeat(4)
     ]
+
+    return Array.from({ length: 5 }, () => content).flat();
   };
   
   export default {
