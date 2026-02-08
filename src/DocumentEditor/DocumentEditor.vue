@@ -161,14 +161,16 @@ export default {
         if(!this.$refs.content.contains(page.elt)) this.$refs.content.appendChild(page.elt);
       }
 
-      // Spread content over several pages if it overflows
-      this.fit_content_over_pages();
+      // Spread content over several pages if it overflows - defer to prevent blocking
+      setTimeout(() => {
+        this.fit_content_over_pages();
 
-      // Remove the text cursor from the content, if any (its position is lost anyway)
-      this.$refs.content.blur();
+        // Remove the text cursor from the content, if any (its position is lost anyway)
+        this.$refs.content.blur();
 
-      // Clear "reset in progress" flag
-      this.reset_in_progress = false;
+        // Clear "reset in progress" flag
+        this.reset_in_progress = false;
+      }, 0);
     },
 
     // Spreads the HTML content over several pages until it fits
@@ -240,7 +242,10 @@ export default {
             }
 
             // move the content step by step to the next page, until it fits
-            move_children_forward_recursively(page.elt, next_page_elt, () => (page.elt.clientHeight <= this.pages_height), this.do_not_break);
+            // Cache page element and height for faster condition checks
+            const page_elt = page.elt;
+            const max_height = this.pages_height;
+            move_children_forward_recursively(page_elt, next_page_elt, () => (page_elt.clientHeight <= max_height), this.do_not_break);
           }
 
           // CLEANING
