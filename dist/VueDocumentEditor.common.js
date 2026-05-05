@@ -2815,12 +2815,22 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
         }
         sub_child_sibling = sub_child.cloneNode(false);
         sub_child_sibling.s_tag = sub_child.s_tag;
+        sub_child_sibling.removeAttribute('data-split-element-id');
         child_sibling.prepend(sub_child_sibling);
       }
 
       // then move/clone its children and sub-children recursively
       move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child);
       sub_child_sibling.normalize(); // merge consecutive text nodes
+
+      // Mark with data-split-element-id only if genuinely split across pages
+      if (sub_child.childNodes.length > 0 && sub_child_sibling.childNodes.length > 0) {
+        sub_child.setAttribute('data-split-element-id', sub_child.s_tag);
+        sub_child_sibling.setAttribute('data-split-element-id', sub_child.s_tag);
+      } else {
+        sub_child.removeAttribute('data-split-element-id');
+        sub_child_sibling.removeAttribute('data-split-element-id');
+      }
     }
 
     // Clean up child if it's emptied during the process
