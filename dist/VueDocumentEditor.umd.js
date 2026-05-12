@@ -2695,7 +2695,7 @@ if (typeof window !== 'undefined') {
 
 // EXTERNAL MODULE: external {"commonjs":"vue","commonjs2":"vue","root":"Vue"}
 var external_commonjs_vue_commonjs2_vue_root_Vue_ = __webpack_require__(9274);
-;// ./node_modules/thread-loader/dist/cjs.js!./node_modules/babel-loader/lib/index.js??clonedRuleSet-82.use[1]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[3]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./src/DocumentEditor/DocumentEditor.vue?vue&type=template&id=4cdc745e&scoped=true
+;// ./node_modules/thread-loader/dist/cjs.js!./node_modules/babel-loader/lib/index.js??clonedRuleSet-82.use[1]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[3]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./src/DocumentEditor/DocumentEditor.vue?vue&type=template&id=188a6133&scoped=true
 
 const _hoisted_1 = {
   class: "editor",
@@ -2727,7 +2727,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onKeyup: _cache[1] || (_cache[1] = (...args) => $options.process_current_text_style && $options.process_current_text_style(...args))
   }, null, 44, _hoisted_4)], 512);
 }
-;// ./src/DocumentEditor/DocumentEditor.vue?vue&type=template&id=4cdc745e&scoped=true
+;// ./src/DocumentEditor/DocumentEditor.vue?vue&type=template&id=188a6133&scoped=true
 
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.push.js
 var es_array_push = __webpack_require__(4114);
@@ -2740,16 +2740,37 @@ var es_iterator_find = __webpack_require__(116);
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.iterator.map.js
 var es_iterator_map = __webpack_require__(1701);
 ;// ./src/DocumentEditor/imports/page-transition-mgmt.js
+
 /**
  * Utility function that acts like an Array.filter on childNodes of "container"
- * @param {HTMLElement} container 
- * @param {string} s_tag 
+ * @param {HTMLElement} container
+ * @param {string} s_tag
+ * @param {Map} sibling_cache Optional cache Map for faster lookups
  */
-function find_sub_child_sibling_node(container, s_tag) {
+function find_sub_child_sibling_node(container, s_tag, sibling_cache = null) {
   if (!container || !s_tag) return false;
+
+  // Check cache first if available
+  if (sibling_cache && sibling_cache.has(s_tag)) {
+    const cached = sibling_cache.get(s_tag);
+    // Verify the cached element is still a child of container
+    if (container.contains(cached)) {
+      return cached;
+    }
+    // Cache miss - remove stale entry
+    sibling_cache.delete(s_tag);
+  }
+
+  // Fallback to linear search
   const child_nodes = container.childNodes;
   for (let i = 0; i < child_nodes.length; i++) {
-    if (child_nodes[i].s_tag == s_tag) return child_nodes[i];
+    if (child_nodes[i].s_tag == s_tag) {
+      // Cache the result if cache is available
+      if (sibling_cache) {
+        sibling_cache.set(s_tag, child_nodes[i]);
+      }
+      return child_nodes[i];
+    }
   }
   return false;
 }
@@ -2757,41 +2778,44 @@ function find_sub_child_sibling_node(container, s_tag) {
 /**
  * This function moves every sub-child of argument "child" to the start of the "child_sibling"
  * argument, beginning from the last child, with word splitting and format preserving.
- * Typically, "child" is the current page which content overflows, and "child_sibling" is the 
+ * Typically, "child" is the current page which content overflows, and "child_sibling" is the
  * next page.
  * @param {HTMLElement} child Element to take children from (current page)
  * @param {HTMLElement} child_sibling Element to copy children to (next page)
  * @param {function} stop_condition Check function that returns a boolean if content doesn't overflow anymore
  * @param {function(HTMLElement):boolean?} do_not_break Optional function that receives the current child element and should return true if the child should not be split over two pages but rather be moved directly to the next page
  * @param {boolean?} not_first_child Should be unset. Used internally to let at least one child in the page
+ * @param {Map} sibling_cache Cache Map for sibling lookups to avoid linear searches
+ * @param {Array} normalize_queue Array of elements to normalize at the end
  */
-function move_children_forward_recursively(child, child_sibling, stop_condition, do_not_break, not_first_child) {
+function move_children_forward_recursively(child, child_sibling, stop_condition, do_not_break, not_first_child, sibling_cache = null, normalize_queue = null) {
+  // Initialize cache and queue on first call
+  if (!sibling_cache) sibling_cache = new Map();
+  if (!normalize_queue) normalize_queue = [];
+
   // if the child still has nodes and the current page still overflows
   while (child.childNodes.length && !stop_condition()) {
     // check if page has only one child tree left
-    not_first_child = not_first_child || child.childNodes.length != 1;
+    not_first_child = not_first_child || child.childNodes.length !== 1;
 
     // select the last sub-child
     const sub_child = child.lastChild;
 
     // if it is a text node, move its content to next page word(/space) by word
-    if (sub_child.nodeType == Node.TEXT_NODE) {
+    if (sub_child.nodeType === Node.TEXT_NODE) {
       const sub_child_text = sub_child.textContent;
       if (sub_child_text.length > 0) {
         let sub_child_hashes = sub_child_text.match(/(\s|\S+)/g);
 
         // Handle long continuous words
         if (!sub_child_hashes || sub_child_hashes.length === 1) {
-          const long_word = sub_child_text;
-          // const split_point = ; // Split the word in half
-
           // Move the second half of the word to the next page
           sub_child.textContent = sub_child_text.slice(0, sub_child_text.length - 1);
           const sub_child_continuation = document.createTextNode(sub_child_text.slice(-1));
           child_sibling.prepend(sub_child_continuation);
 
-          // Check stop condition and return if met
-          if (stop_condition()) return;
+          // Check stop condition
+          if (stop_condition()) break;
           continue;
         }
 
@@ -2800,14 +2824,21 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
         child_sibling.prepend(sub_child_continuation);
         const l = sub_child_hashes ? sub_child_hashes.length : 0;
         for (let i = 0; i < l; i++) {
-          if (i == l - 1 && !not_first_child) return;
+          if (i == l - 1 && !not_first_child) break;
 
           // Move content from current page to the next
           sub_child.textContent = sub_child_hashes.slice(0, l - i - 1).join('');
           sub_child_continuation.textContent = sub_child_hashes.slice(l - i - 1).join('');
 
-          // Check stop condition and return if met
-          if (stop_condition()) return;
+          // Check stop condition
+          if (stop_condition()) {
+            // Restore remaining content if we stopped early
+            if (i > 0) {
+              sub_child.textContent = sub_child_hashes.slice(0, l - i).join('');
+              sub_child_continuation.textContent = sub_child_hashes.slice(l - i).join('');
+            }
+            break;
+          }
         }
       }
     }
@@ -2819,25 +2850,46 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
       child_sibling.prepend(sub_child);
     }
 
-    // for every other node that is not text and not the first child, clone it recursively to next page
+    // for every other node that is not text and not the first child
     else {
-      // check if sub child has already been cloned before
-      let sub_child_sibling = find_sub_child_sibling_node(child_sibling, sub_child.s_tag);
+      // Check if this nested element actually overflows before recursing
+      const sub_child_height = sub_child.clientHeight || sub_child.scrollHeight || 0;
+      const child_height = child.clientHeight || child.scrollHeight || 0;
 
-      // if not, create it and watermark the relationship with a random tag
-      if (!sub_child_sibling) {
-        if (!sub_child.s_tag) {
-          const new_random_tag = Math.random().toString(36).slice(2, 8);
-          sub_child.s_tag = new_random_tag;
+      // If the nested element is small enough, just move it entirely
+      if (sub_child_height <= child_height * 0.8) {
+        // 80% threshold to be safe
+        if (!not_first_child) {
+          return;
         }
-        sub_child_sibling = sub_child.cloneNode(false);
-        sub_child_sibling.s_tag = sub_child.s_tag;
-        child_sibling.prepend(sub_child_sibling);
-      }
+        child_sibling.prepend(sub_child);
+      } else {
+        // Element is too large - we need to split it by recursing
+        // check if sub child has already been cloned before (with cache)
+        let sub_child_sibling = find_sub_child_sibling_node(child_sibling, sub_child.s_tag, sibling_cache);
 
-      // then move/clone its children and sub-children recursively
-      move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child);
-      sub_child_sibling.normalize(); // merge consecutive text nodes
+        // if not, create it and watermark the relationship with a random tag
+        if (!sub_child_sibling) {
+          if (!sub_child.s_tag) {
+            const new_random_tag = Math.random().toString(36).slice(2, 8);
+            sub_child.s_tag = new_random_tag;
+          }
+          sub_child_sibling = sub_child.cloneNode(false);
+          sub_child_sibling.s_tag = sub_child.s_tag;
+          child_sibling.prepend(sub_child_sibling);
+
+          // Cache the new sibling for future lookups
+          sibling_cache.set(sub_child.s_tag, sub_child_sibling);
+        }
+
+        // then move/clone its children and sub-children recursively
+        move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child, sibling_cache, normalize_queue);
+
+        // Queue normalize() call instead of executing immediately (defers expensive operation)
+        if (sub_child_sibling.childNodes.length > 0) {
+          normalize_queue.push(sub_child_sibling);
+        }
+      }
     }
 
     // Clean up child if it's emptied during the process
@@ -2848,6 +2900,14 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
         console.error("Document editor is trying to remove a non-empty sub-child:", sub_child, "in parent:", child);
         throw Error("Document editor is trying to remove a non-empty sub-child. This " + "is a bug and should not happen. Please report a repeatable set of actions that " + "leaded to this error to https://github.com/motla/vue-document-editor/issues/new");
       }
+    }
+  }
+
+  // Process normalize queue at the end (batch expensive normalize operations)
+  for (const elt of normalize_queue) {
+    if (elt.parentNode) {
+      // Only normalize if element is still in DOM
+      elt.normalize();
     }
   }
 }
@@ -3026,14 +3086,16 @@ function move_children_backwards_with_merging(page_html_div, next_page_html_div,
         if (!this.$refs.content.contains(page.elt)) this.$refs.content.appendChild(page.elt);
       }
 
-      // Spread content over several pages if it overflows
-      this.fit_content_over_pages();
+      // Spread content over several pages if it overflows - defer to prevent blocking
+      setTimeout(() => {
+        this.fit_content_over_pages();
 
-      // Remove the text cursor from the content, if any (its position is lost anyway)
-      this.$refs.content.blur();
+        // Remove the text cursor from the content, if any (its position is lost anyway)
+        this.$refs.content.blur();
 
-      // Clear "reset in progress" flag
-      this.reset_in_progress = false;
+        // Clear "reset in progress" flag
+        this.reset_in_progress = false;
+      }, 0);
     },
     // Spreads the HTML content over several pages until it fits
     fit_content_over_pages() {
@@ -3103,9 +3165,8 @@ function move_children_backwards_with_merging(page_html_div, next_page_html_div,
               this.update_pages_elts();
               next_page_elt = next_page.elt;
             }
-
-            // move the content step by step to the next page, until it fits
-            move_children_forward_recursively(page.elt, next_page_elt, () => page.elt.clientHeight <= this.pages_height, this.do_not_break);
+            const max_height = this.pages_height;
+            move_children_forward_recursively(page.elt, next_page_elt, () => page.elt.clientHeight <= max_height, this.do_not_break);
           }
 
           // CLEANING
@@ -3440,15 +3501,15 @@ function move_children_backwards_with_merging(page_html_div, next_page_html_div,
 });
 ;// ./src/DocumentEditor/DocumentEditor.vue?vue&type=script&lang=js
  
-;// ./node_modules/mini-css-extract-plugin/dist/loader.js??clonedRuleSet-54.use[0]!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-54.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-54.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./src/DocumentEditor/DocumentEditor.vue?vue&type=style&index=0&id=4cdc745e&lang=css
+;// ./node_modules/mini-css-extract-plugin/dist/loader.js??clonedRuleSet-54.use[0]!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-54.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-54.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./src/DocumentEditor/DocumentEditor.vue?vue&type=style&index=0&id=188a6133&lang=css
 // extracted by mini-css-extract-plugin
 
-;// ./src/DocumentEditor/DocumentEditor.vue?vue&type=style&index=0&id=4cdc745e&lang=css
+;// ./src/DocumentEditor/DocumentEditor.vue?vue&type=style&index=0&id=188a6133&lang=css
 
-;// ./node_modules/mini-css-extract-plugin/dist/loader.js??clonedRuleSet-54.use[0]!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-54.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-54.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./src/DocumentEditor/DocumentEditor.vue?vue&type=style&index=1&id=4cdc745e&scoped=true&lang=css
+;// ./node_modules/mini-css-extract-plugin/dist/loader.js??clonedRuleSet-54.use[0]!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-54.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-54.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./src/DocumentEditor/DocumentEditor.vue?vue&type=style&index=1&id=188a6133&scoped=true&lang=css
 // extracted by mini-css-extract-plugin
 
-;// ./src/DocumentEditor/DocumentEditor.vue?vue&type=style&index=1&id=4cdc745e&scoped=true&lang=css
+;// ./src/DocumentEditor/DocumentEditor.vue?vue&type=style&index=1&id=188a6133&scoped=true&lang=css
 
 // EXTERNAL MODULE: ./node_modules/vue-loader/dist/exportHelper.js
 var exportHelper = __webpack_require__(6262);
@@ -3461,7 +3522,7 @@ var exportHelper = __webpack_require__(6262);
 
 
 
-const __exports__ = /*#__PURE__*/(0,exportHelper/* default */.A)(DocumentEditorvue_type_script_lang_js, [['render',render],['__scopeId',"data-v-4cdc745e"]])
+const __exports__ = /*#__PURE__*/(0,exportHelper/* default */.A)(DocumentEditorvue_type_script_lang_js, [['render',render],['__scopeId',"data-v-188a6133"]])
 
 /* harmony default export */ var DocumentEditor = (__exports__);
 ;// ./node_modules/@vue/cli-service/lib/commands/build/entry-lib.js
