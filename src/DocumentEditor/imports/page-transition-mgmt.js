@@ -69,39 +69,58 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
       if (sub_child_text.length > 0) {
         let sub_child_hashes = sub_child_text.match(/(\s|\S+)/g);
 
-        // Handle long continuous words
+        // Handle long continuous words with binary search
         if (!sub_child_hashes || sub_child_hashes.length === 1) {
-          // Move the second half of the word to the next page
-          sub_child.textContent = sub_child_text.slice(0, sub_child_text.length - 1);
-          const sub_child_continuation = document.createTextNode(sub_child_text.slice(-1));
+          const sub_child_continuation = document.createTextNode('');
           child_sibling.prepend(sub_child_continuation);
 
-          // Check stop condition
+          let low = 0, high = sub_child_text.length, best_split = 0;
+          while (low <= high) {
+            const mid = Math.floor((low + high) / 2);
+            sub_child.textContent = sub_child_text.slice(0, mid);
+            sub_child_continuation.textContent = sub_child_text.slice(mid);
+            if (stop_condition()) {
+              best_split = mid;
+              low = mid + 1;
+            } else {
+              high = mid - 1;
+            }
+          }
+          sub_child.textContent = sub_child_text.slice(0, best_split);
+          sub_child_continuation.textContent = sub_child_text.slice(best_split);
+
           if (stop_condition()) break;
           continue;
         }
 
-        // Proceed with normal text handling
+        // Binary search for the split point to minimize stop_condition calls
         const sub_child_continuation = document.createTextNode('');
         child_sibling.prepend(sub_child_continuation);
-        const l = sub_child_hashes ? sub_child_hashes.length : 0;
+        const total_words = sub_child_hashes.length;
 
-        for (let i = 0; i < l; i++) {
-          if (i == l - 1 && !not_first_child) break;
+        // Find minimum words to move to next page such that page fits
+        let low = 1;
+        let high = not_first_child ? total_words : total_words - 1;
+        let best_moved = 0;
 
-          // Move content from current page to the next
-          sub_child.textContent = sub_child_hashes.slice(0, l - i - 1).join('');
-          sub_child_continuation.textContent = sub_child_hashes.slice(l - i - 1).join('');
-
-          // Check stop condition
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2);
+          const keep = total_words - mid;
+          sub_child.textContent = sub_child_hashes.slice(0, keep).join('');
+          sub_child_continuation.textContent = sub_child_hashes.slice(keep).join('');
           if (stop_condition()) {
-            // Restore remaining content if we stopped early
-            if (i > 0) {
-              sub_child.textContent = sub_child_hashes.slice(0, l - i).join('');
-              sub_child_continuation.textContent = sub_child_hashes.slice(l - i).join('');
-            }
-            break;
+            best_moved = mid;
+            high = mid - 1;
+          } else {
+            low = mid + 1;
           }
+        }
+
+        // Apply the best found split
+        if (best_moved > 0) {
+          const keep = total_words - best_moved;
+          sub_child.textContent = sub_child_hashes.slice(0, keep).join('');
+          sub_child_continuation.textContent = sub_child_hashes.slice(keep).join('');
         }
       }
     }
@@ -115,42 +134,29 @@ function move_children_forward_recursively(child, child_sibling, stop_condition,
 
     // for every other node that is not text and not the first child
     else {
-      // Check if this nested element actually overflows before recursing
-      const sub_child_height = sub_child.clientHeight || sub_child.scrollHeight || 0;
-      const child_height = child.clientHeight || child.scrollHeight || 0;
+      // check if sub child has already been cloned before (with cache)
+      let sub_child_sibling = find_sub_child_sibling_node(child_sibling, sub_child.s_tag, sibling_cache);
 
-      // If the nested element is small enough, just move it entirely
-      if (sub_child_height <= child_height * 0.8) {  // 80% threshold to be safe
-        if (!not_first_child) {
-          return;
+      // if not, create it and watermark the relationship with a random tag
+      if(!sub_child_sibling) {
+        if(!sub_child.s_tag) {
+          const new_random_tag = Math.random().toString(36).slice(2, 8);
+          sub_child.s_tag = new_random_tag;
         }
-        child_sibling.prepend(sub_child);
-      } else {
-        // Element is too large - we need to split it by recursing
-        // check if sub child has already been cloned before (with cache)
-        let sub_child_sibling = find_sub_child_sibling_node(child_sibling, sub_child.s_tag, sibling_cache);
+        sub_child_sibling = sub_child.cloneNode(false);
+        sub_child_sibling.s_tag = sub_child.s_tag;
+        child_sibling.prepend(sub_child_sibling);
 
-        // if not, create it and watermark the relationship with a random tag
-        if(!sub_child_sibling) {
-          if(!sub_child.s_tag) {
-            const new_random_tag = Math.random().toString(36).slice(2, 8);
-            sub_child.s_tag = new_random_tag;
-          }
-          sub_child_sibling = sub_child.cloneNode(false);
-          sub_child_sibling.s_tag = sub_child.s_tag;
-          child_sibling.prepend(sub_child_sibling);
+        // Cache the new sibling for future lookups
+        sibling_cache.set(sub_child.s_tag, sub_child_sibling);
+      }
 
-          // Cache the new sibling for future lookups
-          sibling_cache.set(sub_child.s_tag, sub_child_sibling);
-        }
+      // then move/clone its children and sub-children recursively
+      move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child, sibling_cache, normalize_queue);
 
-        // then move/clone its children and sub-children recursively
-        move_children_forward_recursively(sub_child, sub_child_sibling, stop_condition, do_not_break, not_first_child, sibling_cache, normalize_queue);
-
-        // Queue normalize() call instead of executing immediately (defers expensive operation)
-        if (sub_child_sibling.childNodes.length > 0) {
-          normalize_queue.push(sub_child_sibling);
-        }
+      // Queue normalize() call instead of executing immediately (defers expensive operation)
+      if (sub_child_sibling.childNodes.length > 0) {
+        normalize_queue.push(sub_child_sibling);
       }
     }
 
