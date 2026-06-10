@@ -445,7 +445,7 @@ export default {
       this.$refs.editor.classList.remove("hide_children");
     },
     update_css_media_style () {
-      this.css_media_style.innerHTML = "@media print { @page { size: "+this.page_format_mm[0]+"mm "+this.page_format_mm[1]+"mm; margin: 0 !important; } .hidden-print { display: none !important; } }";
+      this.css_media_style.innerHTML = "@media print { @page { size: "+this.page_format_mm[0]+"mm "+this.page_format_mm[1]+"mm; margin: 0 !important; } .hidden-print { display: none !important; } .page { transition: none !important; } }";
     },
 
     // Prepare content before opening the native print box
